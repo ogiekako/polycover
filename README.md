@@ -1,3 +1,6 @@
+Run
+`java -jar poly.jar`
+
 Links:
 + ポリオミノのはみ出し可能な被覆問題
 http://www.alg.cei.uec.ac.jp/itohiro/Games/Game100301.html#anchor3

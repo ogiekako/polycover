@@ -1,4 +1,4 @@
 #!/bin/bash
-pushd src
+pushd bin
 jar cfm ../poly.jar ../META-INF/MANIFEST.MF ./*
 popd

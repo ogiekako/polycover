@@ -23,5 +23,6 @@ public class WAFrame extends JDialog implements AbstView{
 		this.setSize(400,400);
 		WAPanel panel=new WAPanel(this.cont.wa);
 		this.add(panel);
+		this.setFocusableWindowState(false);
 	}
 }

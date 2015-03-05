@@ -8,6 +8,8 @@ http://www.alg.cei.uec.ac.jp/itohiro/Games/Game100301.html#anchor3
 http://inabapuzzle.com/hirameki/suuri_7.html
 + mixi: ポリオミノを覆えないポリオミノを探す問題（仮題）
 http://mixi.jp/view_bbs.pl?comm_id=3271312&id=49259367
++ Math puzzle (I Pentomino Exclusion)
+http://www.mathpuzzle.com/23Dec2010.html
 
 To update poly.jar, run:
 `./run.sh`

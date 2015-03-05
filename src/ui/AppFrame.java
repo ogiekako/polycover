@@ -202,7 +202,7 @@ public class AppFrame extends JFrame{
 						cont.setCover(new PolyArray(new boolean[n][n]));
 						sizeDialog.dispose();
 					}catch(Exception ex){
-						JOptionPane.showMessageDialog(panel,"specify interger > 0.");
+						JOptionPane.showMessageDialog(panel,"specify integer > 0.");
 					}
 				}
 			});

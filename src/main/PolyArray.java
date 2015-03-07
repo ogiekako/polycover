@@ -127,7 +127,6 @@ public class PolyArray implements AbstPoly {
         if (obj == null) return false;
         if (getClass() != obj.getClass()) return false;
         PolyArray other = (PolyArray) obj;
-        if (!Arrays.deepEquals(array, other.array)) return false;
-        return true;
+        return Arrays.deepEquals(array, other.array);
     }
 }

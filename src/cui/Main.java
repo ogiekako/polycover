@@ -16,7 +16,7 @@ public class Main {
         Scanner coverIn = new Scanner(new File(coverFileName));
         PolyArray covered = PolyArray.load(coveredIn);
         PolyArray cover = PolyArray.load(coverIn);
-        boolean ok = Judge.judge(covered, cover) == null;
+        boolean ok = Judge.newBuilder(covered, cover).build().judge() == null;
         System.out.println(ok ? "OK" : "NG");
     }
 }

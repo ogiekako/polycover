@@ -1,15 +1,74 @@
 package main;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.logging.Logger;
 
 import ui.AbstProgressMonitor;
+import util.Debug;
 
 public class Judge {
+    static Logger logger = Logger.getLogger(Judge.class.getName());
+    // the problem, or the polyomino to be covered.
+    AbstPoly problem;
+    // the candidate, or the polyomino whose multiple copies are used to cover the target.
+    AbstPoly candidate;
+    // number of candidates that can be used.
+    int numCandidates = (int) 1e9;
+    int enabledCandDepth = (int) 1e9;
+    AbstProgressMonitor monitor = new AbstProgressMonitor() {
+        @Override
+        public void setValue(int n) {
+            // Do nothing.
+        }
+    };
+    Stopwatch latencyMetric = Stopwatch.DO_NOTHING;
+
+    int numCellsInProblem;
+
+    State[] states;
+    Map<Long, List<State>> maskToState;
+
+    Judge(AbstPoly problem, AbstPoly candidate) {
+        this.problem = problem;
+        this.candidate = candidate;
+    }
+
+    public static Builder newBuilder(AbstPoly problem, AbstPoly candidate) {
+        return new Builder(problem, candidate);
+    }
+
+    public static class Builder {
+        private Judge judge;
+
+        private Builder(AbstPoly problem, AbstPoly candidate) {
+            judge = new Judge(problem, candidate);
+        }
+
+        public Builder setMonitor(AbstProgressMonitor monitor) {
+            judge.monitor = monitor;
+            return this;
+        }
+
+        public Builder setNumCandidates(int numCandidates) {
+            judge.numCandidates = numCandidates;
+            return this;
+        }
+
+        public Builder setEnabledCandDepth(int enabledCandDepth) {
+            judge.enabledCandDepth = enabledCandDepth;
+            return this;
+        }
+
+        public Builder setLatencyMetric(Stopwatch latencyMetric) {
+            judge.latencyMetric = latencyMetric;
+            return this;
+        }
+
+        public Judge build() {
+            return judge;
+        }
+    }
+
     /**
      * problem が candidate で,重ならずに覆えるかどうかを判定する.
      * 覆えない場合は,null を返す.
@@ -19,14 +78,22 @@ public class Judge {
      * enabledCandDepth,有効なセルのバウンディングボックスからの距離を示す.例えば,1なら,周辺のセルしかみない.
      * また,その内側にはブロックがおいてあるかのように,入れない.
      *
-     * @param problem        - the problem, or the polyomino to be covered.
-     * @param candidate      - the candidate, or the polyomino whose multiple copies are used to cover the target.
-     * @param numCandidates  - number of candidates that can be used.
-     * @param enabledCandDepth
-     * @return
      * @throws NoCellException
      */
-    public static int[][] judge(AbstPoly problem, AbstPoly candidate, int numCandidates, int enabledCandDepth, AbstProgressMonitor monitor) throws NoCellException {
+    public int[][] judge() throws NoCellException {
+        // TODO: extract method.
+        numCellsInProblem = 0;
+        for (int i = 0; i < problem.getHeight(); i++)
+            for (int j = 0; j < problem.getWidth(); j++)
+                if (problem.get(i, j)) numCellsInProblem++;
+        if (numCellsInProblem > 64) {
+            throw new IllegalArgumentException("Number of cells in the problem must be at most 64.");
+        }
+        Cell[] cellsInProblem = new Cell[numCellsInProblem];
+        for (int i = 0, k = 0; i < problem.getHeight(); i++)
+            for (int j = 0; j < problem.getWidth(); j++)
+                if (problem.get(i, j)) cellsInProblem[k++] = new Cell(i, j);
+
         if (candidate == null) throw new NoCellException();
 
         if (monitor != null) {
@@ -45,104 +112,75 @@ public class Judge {
         AbstPoly[] candidates = candSet.toArray(new AbstPoly[candSet.size()]);
 
         int numCandPattern = candidates.length;
+        logger.info(Debug.toString("numCandPattern", numCandPattern));
 
         int numEnabledCandCells = getCellsOnPeripheral(candidate, enabledCandDepth).size();
         if (numEnabledCandCells == 0) throw new NoCellException();
+        logger.info(Debug.toString("numEnabledCandCells", numEnabledCandCells));
         Cell[][] enabledCellsForCand = enabledCandCells(enabledCandDepth, candidates);
         for (Cell[] cs : enabledCellsForCand) if (cs.length != numEnabledCandCells) throw new AssertionError();
 
-        // TODO: extract method.
-        int numCellInProblem = 0;
-        for (int i = 0; i < problem.getHeight(); i++)
-            for (int j = 0; j < problem.getWidth(); j++)
-                if (problem.get(i, j)) numCellInProblem++;
-        Cell[] cellsInProblem = new Cell[numCellInProblem];
-        for (int i = 0, k = 0; i < problem.getHeight(); i++)
-            for (int j = 0; j < problem.getWidth(); j++)
-                if (problem.get(i, j)) cellsInProblem[k++] = new Cell(i, j);
-
-        Map<State, Integer> numSameStates = new HashMap<State, Integer>();
-        // Number of ways to place a cell in cand over a cell in problem.
-        int numAllWaysToPut = numCandPattern * numEnabledCandCells * numCellInProblem;
-        // Iterate over all such patterns.
-        for (int i = 0, progress = 0; i < numCandPattern; i++)
-            for (int j = 0; j < numEnabledCandCells; j++)
-                for (int k = 0; k < numCellInProblem; k++) {
-                    progress++;
-                    if (monitor != null) monitor.setValue(progress * 10 / numAllWaysToPut);
-                    // cellsInProblem[k] に,enabledCellsForCand[i][j]
-                    // を重ねた場合を考えている.
-                    // dは,cand を,どれだけ動かせば,problem に重なるかを表す.
-                    Cell candMoveVec = cellsInProblem[k].sub(enabledCellsForCand[i][j]);
-                    State state = new State(i, candMoveVec);
-                    if (!numSameStates.containsKey(state)) numSameStates.put(state, 1);
-                    else numSameStates.put(state, numSameStates.get(state) + 1);
-                }
-
-        State[] states = numSameStates.keySet().toArray(new State[0]);
-        for (State s : states)
-            s.num = numSameStates.get(s);
-        int numStates = states.length;
+        latencyMetric.tick("computeAllStates");
+        Map<State, Integer> numSameStates =
+                computeAllStates(numCandPattern, numEnabledCandCells, enabledCellsForCand, numCellsInProblem, cellsInProblem);
+        latencyMetric.tack("computeAllStates");
+        states = numSameStates.keySet().toArray(new State[0]);
+        for (int i = 0; i < states.length; i++) {
+            states[i].myId = i;
+        }
+        logger.info(Debug.toString("num states", states.length));
         for (State s : states) s.possiblePairs = new ArrayList<State>();
 
-        int numAllCombination = numStates * (numStates - 1) / 2;
-        for (int i = 0, progress = 0; i < numStates; i++) {
-            // TODO: for state S, if there is a cell in problem such that any state cannot be used for covering,
-            // we can remove the S from consideration.
-
-            // Cand moved according to states[i].
-            Set<Cell> movedCand = new HashSet<Cell>();
-            for (int j = 0; j < numEnabledCandCells; j++) {
-                movedCand.add(enabledCellsForCand[states[i].candId][j].add(states[i].candMoveVec));
-            }
-            for (int j = i + 1; j < numStates; j++) {
-                progress++;
-                if (monitor != null) monitor.setValue(10 + progress * 40 / numAllCombination);
-
-                Cell d = states[i].candMoveVec.sub(states[j].candMoveVec);
-
-                int h = Math.min(candidates[states[i].candId].getHeight(), candidates[states[j].candId].getHeight());
-                int w = Math.min(candidates[states[i].candId].getWidth(), candidates[states[j].candId].getWidth());
-                if (Math.abs(d.x) < h - enabledCandDepth && Math.abs(d.y) < w - enabledCandDepth)
-                    continue;
-
-                boolean overlapping = false;
-                for (int k = 0; k < numEnabledCandCells; k++) {
-                    if (movedCand.contains(enabledCellsForCand[states[j].candId][k].add(states[j].candMoveVec))) {
-                        overlapping = true;
-                        break;
+        Set<Cell>[][] forbiddenMoves = new Set[numCandPattern][numCandPattern]; // cand[i] cannot be moved by these dirs not to overlap with cand[j].
+        int numForbiddenMoves = 0;
+        for (int i = 0; i < numCandPattern; i++) {
+            for (int j = 0; j < numCandPattern; j++) {
+                forbiddenMoves[i][j] = new HashSet<Cell>();
+                for (Cell c : enabledCellsForCand[i]) {
+                    for (Cell d : enabledCellsForCand[j]) {
+                        Cell dir = d.sub(c);
+                        forbiddenMoves[i][j].add(dir);
                     }
                 }
-                if (!overlapping) {
-                    states[i].possiblePairs.add(states[j]);
-                }
+                numForbiddenMoves += forbiddenMoves[i][j].size();
             }
         }
+        logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
 
+        latencyMetric.tick("updatePossibleStatePairs");
+        updatePossibleStatePairs(candidates, states.length, forbiddenMoves);
+        int numPromisingStates = 0;
+        for (State s : states) if (!s.hopeless) numPromisingStates++;
+        logger.info(Debug.toString("num promising states:", numPromisingStates));
+        latencyMetric.tack("updatePossibleStatePairs");
+        numCandidates = Math.min(numCandidates, numCellsInProblem);
+
+        latencyMetric.tick("solving");
         List<State> ans = null;
-        numCandidates = Math.min(numCandidates, numCellInProblem);
-
-        int all3 = numCandidates * numStates;
+        int all3 = numCandidates * states.length;
 
         loop:
         for (int i = 0, progress = 0; i < numCandidates; i++) {
             Set<State> visited = new HashSet<State>();
             for (State state : states) {
-
                 progress++;
                 // [50, 100]
                 if (monitor != null) monitor.setValue(50 + progress * 50 / all3);
 
+                if (state.hopeless) continue;
+
                 List<State> init = new ArrayList<State>();
                 init.add(state);
                 visited.add(state);
-                ans = dfs(init, 0, state.num, numCellInProblem, i, 0);
+                ans = dfs(init, 0, state.mask, numCellsInProblem, i, 0);
                 if (ans != null) {
                     break loop;
                 }
             }
         }
+        latencyMetric.tack("solving");
 
+        // Create result from ans.
         if (monitor != null) monitor.setValue(0);
 
         if (ans == null) return null;
@@ -168,7 +206,7 @@ public class Judge {
             }
         }
 
-        for (int i = 0; i < numCellInProblem; i++) {
+        for (int i = 0; i < numCellsInProblem; i++) {
             Cell cell = cellsInProblem[i];
             assert res[cell.x - minX][cell.y - minY] > 0;
             res[cell.x - minX][cell.y - minY] = -res[cell.x - minX][cell.y - minY];
@@ -176,7 +214,72 @@ public class Judge {
         return res;
     }
 
-    private static Cell[][] enabledCandCells(int validCellDepth, AbstPoly[] candidates) {
+    private void updatePossibleStatePairs(AbstPoly[] candidates, int numStates, Set<Cell>[][] forbiddenMoves) {
+        maskToState = new HashMap<Long, List<State>>();
+        for (State s : states) {
+            if (!maskToState.containsKey(s.mask)) maskToState.put(s.mask, new ArrayList<State>());
+            maskToState.get(s.mask).add(s);
+        }
+
+        int numAllCombination = numStates * maskToState.size();
+        for (int i = 0, progress = 0; i < numStates; i++) {
+            long mask = states[i].mask;
+            // TODO: for state S, if there is a cell in problem such that any state cannot cover the cell,
+            // we can remove the S from consideration.
+            for (Map.Entry<Long, List<State>> e : maskToState.entrySet()) {
+                progress++;
+                if (monitor != null) monitor.setValue(10 + progress * 40 / numAllCombination);
+
+                if ((states[i].mask & e.getKey()) != 0) continue;
+
+                for (State s : e.getValue()) {
+                    Cell d = states[i].candMoveVec.sub(s.candMoveVec);
+                    if (forbiddenMoves[states[i].candId][s.candId].contains(d)) continue;
+
+                    int h = Math.min(candidates[states[i].candId].getHeight(), candidates[s.candId].getHeight());
+                    int w = Math.min(candidates[states[i].candId].getWidth(), candidates[s.candId].getWidth());
+                    if (Math.abs(d.x) < h - enabledCandDepth && Math.abs(d.y) < w - enabledCandDepth)
+                        continue;
+                    mask |= e.getKey();
+                    if (i < s.myId) {
+                        states[i].possiblePairs.add(s);
+                    }
+                }
+            }
+            if (mask != (1L << numCellsInProblem) - 1) {
+                states[i].hopeless = true;
+            }
+        }
+    }
+
+    private Map<State, Integer> computeAllStates(int numCandPattern, int numEnabledCandCells, Cell[][] enabledCellsForCand, int numCellInProblem, Cell[] cellsInProblem) {
+        Map<State, Integer> numSameStates = new HashMap<State, Integer>();
+        // Number of ways to place a cell in cand over a cell in problem.
+        int numAllWaysToPut = numCandPattern * numEnabledCandCells * numCellInProblem;
+        // Iterate over all such patterns.
+        for (int i = 0, progress = 0; i < numCandPattern; i++)
+            for (int j = 0; j < numEnabledCandCells; j++)
+                for (int k = 0; k < numCellInProblem; k++) {
+                    progress++;
+                    if (monitor != null) monitor.setValue(progress * 10 / numAllWaysToPut);
+                    // cellsInProblem[k] に,enabledCellsForCand[i][j]
+                    // を重ねた場合を考えている.
+                    // dは,cand を,どれだけ動かせば,problem に重なるかを表す.
+                    Cell candMoveVec = cellsInProblem[k].sub(enabledCellsForCand[i][j]);
+                    State state = new State(i, candMoveVec);
+                    for (int l = 0; l < numCellInProblem; l++) {
+                        Cell orig = cellsInProblem[l].sub(candMoveVec);
+                        if (Arrays.asList(enabledCellsForCand[i]).contains(orig)) {
+                            state.mask |= 1L << l;
+                        }
+                    }
+                    if (!numSameStates.containsKey(state)) numSameStates.put(state, 1);
+                    else numSameStates.put(state, numSameStates.get(state) + 1);
+                }
+        return numSameStates;
+    }
+
+    private Cell[][] enabledCandCells(int validCellDepth, AbstPoly[] candidates) {
         int numCandPattern = candidates.length;
         Cell[][] enabledCells = new Cell[numCandPattern][];
         for (int i = 0; i < numCandPattern; i++) {
@@ -186,17 +289,17 @@ public class Judge {
         return enabledCells;
     }
 
-    private static List<Cell> getCellsOnPeripheral(AbstPoly poly, int depth) {
+    private List<Cell> getCellsOnPeripheral(AbstPoly poly, int depth) {
         List<Cell> cells = new ArrayList<Cell>();
         for (int i = 0; i < poly.getHeight(); i++)
             for (int j = 0; j < poly.getWidth(); j++)
                 if (isCellOnPeripheral(poly, i, j, depth)) {
-                    cells.add(new Cell(i,j));
+                    cells.add(new Cell(i, j));
                 }
         return cells;
     }
 
-    private static boolean isCellOnPeripheral(AbstPoly poly, int x, int y, int depth) {
+    private boolean isCellOnPeripheral(AbstPoly poly, int x, int y, int depth) {
         int h = poly.getHeight(), w = poly.getWidth();
         if (!poly.get(x, y)) return false;
         if (depth <= x && x < h - depth && depth <= y && y < w - depth)
@@ -204,35 +307,40 @@ public class Judge {
         return true;
     }
 
-    static List<State> dfs(List<State> befStates, int befId, int sum, int obj, int maxDepth, int depth) {
-        if (sum == obj) return befStates;
+    List<State> dfs(List<State> stateStack, int prevStateIdx, long mask, int numCellsInProblem, int maxDepth, int depth) {
+        if (mask == (1L << numCellsInProblem) - 1) return stateStack;
         if (depth >= maxDepth) return null;
-        assert sum < obj;
-        for (int i = befId; i < befStates.get(0).possiblePairs.size(); i++) {
-            State nxtState = befStates.get(0).possiblePairs.get(i);
+        for (int i = prevStateIdx; i < stateStack.get(0).possiblePairs.size(); i++) {
+            State nxtState = stateStack.get(0).possiblePairs.get(i);
+            if (nxtState.hopeless) continue;
             boolean ok = true;
-            for (int j = 1; j < befStates.size(); j++) {
-                if (!befStates.get(j).possiblePairs.contains(nxtState)) {
+            for (int j = 1; j < stateStack.size(); j++) {
+                if (!stateStack.get(j).possiblePairs.contains(nxtState)) {
                     ok = false;
                     break;
                 }
             }
             if (ok) {
-                befStates.add(nxtState);
-                List<State> tmp = dfs(befStates, i, sum + nxtState.num, obj,
+                stateStack.add(nxtState);
+                List<State> tmp = dfs(stateStack, i, mask | nxtState.mask, numCellsInProblem,
                         maxDepth, depth + 1);
                 if (tmp != null) return tmp;
-                befStates.remove(befStates.size() - 1);
+                stateStack.remove(stateStack.size() - 1);
             }
         }
         return null;
     }
 
-    private static class State {
+    private class State {
+        int myId;
         int candId;
         Cell candMoveVec;
-        int num;
+        //        int num;
         List<State> possiblePairs;
+        // bit mask represents the cells in problem this state covers.
+        long mask;
+        // true if this state will never be a part of any solution.
+        boolean hopeless;
 
         public State(int candId, Cell candMoveVec) {
             super();
@@ -261,7 +369,7 @@ public class Judge {
         }
 
         public String toString() {
-            return "State [candMoveVec=" + candMoveVec + ", possiblePairs.size()=" + possiblePairs.size() + ", candId=" + candId + ", num=" + num + "]";
+            return "State [candMoveVec=" + candMoveVec + ", possiblePairs.size()=" + possiblePairs.size() + ", candId=" + candId + ", mask=" + mask + "]";
         }
     }
 
@@ -326,13 +434,5 @@ public class Judge {
             for (int j = 0; j < w; j++)
                 cell[i + 1][j + 1] = !poly.get(i, j);
         return connected(cell);
-    }
-
-    public static int[][] judge(PolyArray problem, PolyArray candidate) throws NoCellException {
-        return judge(problem, candidate, Integer.MAX_VALUE / 2, Integer.MAX_VALUE / 2);
-    }
-
-    public static int[][] judge(PolyArray problem, PolyArray candidate, int numCandidate, int validCellDepth) throws NoCellException {
-        return judge(problem, candidate, numCandidate, validCellDepth, null);
     }
 }

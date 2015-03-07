@@ -33,9 +33,9 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate);
+        int[][] res = Judge.newBuilder(problem, candidate).build().judge();
 
-        Assert.assertEquals(res, null);
+        Assert.assertNull(res);
     }
 
     @Test
@@ -53,7 +53,7 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate);
+        int[][] res = Judge.newBuilder(problem, candidate).build().judge();
         Assert.assertTrue(res != null);
     }
 
@@ -72,7 +72,7 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate, 2, 1);
+        int[][] res = Judge.newBuilder(problem, candidate).setNumCandidates(2).setEnabledCandDepth(1).build().judge();
         Assert.assertTrue(res == null);
     }
 
@@ -91,8 +91,8 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate, 2, 2);
-        Assert.assertTrue(res != null);
+        int[][] res = Judge.newBuilder(problem, candidate).setNumCandidates(2).setEnabledCandDepth(2).build().judge();
+        Assert.assertNotNull(res);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate, 1, Integer.MAX_VALUE);
+        int[][] res = Judge.newBuilder(problem, candidate).setNumCandidates(1).build().judge();
         Assert.assertTrue(res == null);
     }
 
@@ -124,7 +124,7 @@ public class JudgeTest {
                 {true}
         };
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate);
+        int[][] res = Judge.newBuilder(problem, candidate).build().judge();
         Assert.assertTrue(res != null);
     }
 
@@ -138,7 +138,7 @@ public class JudgeTest {
                 {true, true}
         };
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate);
+        int[][] res = Judge.newBuilder(problem, candidate).build().judge();
         Assert.assertTrue(res != null);
     }
 
@@ -155,14 +155,15 @@ public class JudgeTest {
                 "###"
         });
         PolyArray problem = new PolyArray(acd);
-        int[][] res = Judge.judge(problem, candidate);
+        int[][] res = new Judge(problem, candidate).judge();
 
         Assert.assertTrue(res != null);
     }
 
     // TODO: the following two tests takes too long time. Speed up judge.
     @Test
-    public void testYes() throws Exception {
+    public void testYes() throws Exception {// 20m
+        Stopwatch latencyMetric = new Stopwatch();
         List<String> problems = allFilesUnder(new File("problem"));
         for (String probPath : problems) {
             if (probPath.endsWith(".yes")) {
@@ -172,17 +173,20 @@ public class JudgeTest {
                 Scanner ansIn = new Scanner(new File(ansPath));
                 PolyArray prob = PolyArray.load(probIn);
                 PolyArray ans = PolyArray.load(ansIn);
-                int[][] result = Judge.judge(prob, ans);
+                int[][] result = Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
                 Assert.assertNull(Debug.toString(result), result);
+
+                System.err.println(latencyMetric.summary());
             }
         }
     }
 
     @Test
-    public void testNo() throws Exception {
-        // TODO: Add all *.ans . Currenty the change will make this test too slow.
+    public void testNo() throws Exception {// 42m
+        // TODO: Add all *.ans files. Currenty the change will make this test too slow.
         String[] testAnsPaths = {"ans/hexomino/8.ans", "ans/hexomino/C.ans"};
 
+        Stopwatch latencyMetric = new Stopwatch();
         List<String> problems = allFilesUnder(new File("problem"));
         for (String probPath : problems) {
             if (probPath.endsWith(".no")) {
@@ -192,8 +196,10 @@ public class JudgeTest {
                     Scanner ansIn = new Scanner(new File(ansPath));
                     PolyArray prob = PolyArray.load(probIn);
                     PolyArray ans = PolyArray.load(ansIn);
-                    int[][] result = Judge.judge(prob, ans);
+                    int[][] result = Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
                     Assert.assertNotNull(result);
+
+                    System.err.println(latencyMetric.summary());
                 }
             }
         }

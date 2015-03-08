@@ -10,13 +10,13 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) throws FileNotFoundException, NoCellException {
-        String coveredFileName = args[0];
-        String coverFileName = args[1];
-        Scanner coveredIn = new Scanner(new File(coveredFileName));
-        Scanner coverIn = new Scanner(new File(coverFileName));
-        PolyArray covered = PolyArray.load(coveredIn);
-        PolyArray cover = PolyArray.load(coverIn);
-        boolean ok = Judge.newBuilder(covered, cover).build().judge() == null;
+        String problemFileName = args[0];
+        String candFileName = args[1];
+        Scanner problemIn = new Scanner(new File(problemFileName));
+        Scanner candIn = new Scanner(new File(candFileName));
+        PolyArray problem = PolyArray.load(problemIn);
+        PolyArray cand = PolyArray.load(candIn);
+        boolean ok = Judge.newBuilder(problem, cand).build().judge() == null;
         System.out.println(ok ? "OK" : "NG");
     }
 }

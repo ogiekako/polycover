@@ -54,7 +54,7 @@ public class JudgeTest {
         });
         PolyArray problem = new PolyArray(acd);
         int[][] res = Judge.newBuilder(problem, candidate).build().judge();
-        Assert.assertTrue(res != null);
+        Assert.assertNotNull(res);
     }
 
     @Test
@@ -111,7 +111,7 @@ public class JudgeTest {
         });
         PolyArray problem = new PolyArray(acd);
         int[][] res = Judge.newBuilder(problem, candidate).setNumCandidates(1).build().judge();
-        Assert.assertTrue(res == null);
+        Assert.assertTrue(Debug.toString(res), res == null);
     }
 
     @Test

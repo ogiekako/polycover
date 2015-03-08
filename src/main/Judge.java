@@ -156,28 +156,7 @@ public class Judge {
         numCandidates = Math.min(numCandidates, numCellsInProblem);
 
         latencyMetric.tick("solving");
-        List<State> ans = null;
-        int all3 = numCandidates * states.length;
-
-        loop:
-        for (int i = 0, progress = 0; i < numCandidates; i++) {
-            Set<State> visited = new HashSet<State>();
-            for (State state : states) {
-                progress++;
-                // [50, 100]
-                if (monitor != null) monitor.setValue(50 + progress * 50 / all3);
-
-                if (state.hopeless) continue;
-
-                List<State> init = new ArrayList<State>();
-                init.add(state);
-                visited.add(state);
-                ans = dfs(init, 0, state.mask, numCellsInProblem, i, 0);
-                if (ans != null) {
-                    break loop;
-                }
-            }
-        }
+        List<State> ans = dfs(new ArrayList<State>(), 0, 0);
         latencyMetric.tack("solving");
 
         // Create result from ans.
@@ -307,24 +286,22 @@ public class Judge {
         return true;
     }
 
-    List<State> dfs(List<State> stateStack, int prevStateIdx, long mask, int numCellsInProblem, int maxDepth, int depth) {
+    List<State> dfs(List<State> stateStack, long mask, int currentNumCands) {
         if (mask == (1L << numCellsInProblem) - 1) return stateStack;
-        if (depth >= maxDepth) return null;
-        for (int i = prevStateIdx; i < stateStack.get(0).possiblePairs.size(); i++) {
-            State nxtState = stateStack.get(0).possiblePairs.get(i);
-            if (nxtState.hopeless) continue;
-            boolean ok = true;
-            for (int j = 1; j < stateStack.size(); j++) {
-                if (!stateStack.get(j).possiblePairs.contains(nxtState)) {
-                    ok = false;
-                    break;
+        if (currentNumCands >= numCandidates) return null;
+
+        long rest = ((1L << numCellsInProblem) - 1) ^ mask;
+        for (Map.Entry<Long, List<State>> e : maskToState.entrySet()) {
+            if (Long.highestOneBit(rest) != Long.highestOneBit(e.getKey())) continue;
+            loop:
+            for (State s : e.getValue()) {
+                if (s.hopeless) continue;
+                for (State t : stateStack) {
+                    if (!t.possiblePairs.contains(s) && !s.possiblePairs.contains(t)) continue loop;
                 }
-            }
-            if (ok) {
-                stateStack.add(nxtState);
-                List<State> tmp = dfs(stateStack, i, mask | nxtState.mask, numCellsInProblem,
-                        maxDepth, depth + 1);
-                if (tmp != null) return tmp;
+                stateStack.add(s);
+                List<State> res = dfs(stateStack, mask | e.getKey(), currentNumCands + 1);
+                if (res != null) return res;
                 stateStack.remove(stateStack.size() - 1);
             }
         }

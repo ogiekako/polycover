@@ -1,12 +1,13 @@
 package ui;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.event.*;
-import javax.swing.JPanel;
-
 import main.Cell;
-import util.Debug;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class PolyPanel extends JPanel implements AbstView {
     public void update() {

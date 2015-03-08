@@ -1,10 +1,10 @@
 package main;
 
-import java.util.*;
-import java.util.logging.Logger;
-
 import ui.AbstProgressMonitor;
 import util.Debug;
+
+import java.util.*;
+import java.util.logging.Logger;
 
 public class Judge {
     static Logger logger = Logger.getLogger(Judge.class.getName());

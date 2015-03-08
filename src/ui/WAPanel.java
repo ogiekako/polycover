@@ -1,8 +1,7 @@
 package ui;
 
-import java.awt.Color;
-import java.awt.Graphics;
-import javax.swing.JPanel;
+import javax.swing.*;
+import java.awt.*;
 
 public class WAPanel extends JPanel{
 	private final WAModel wa;

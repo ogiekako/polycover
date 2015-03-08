@@ -1,49 +1,42 @@
 package ui;
 
-import java.awt.Component;
+import main.*;
+
+import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Scanner;
-import java.util.Set;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-import javax.swing.SwingWorker;
-
-import main.Cell;
-import main.Judge;
-import main.NoCellException;
-import main.PolyArray;
+import java.util.logging.Logger;
 
 public class Cont implements AbstCont, AbstProgressMonitor {
-    final Model cover;
-    final Model covered;
+    static Logger logger = Logger.getLogger(Cont.class.getName());
+
+    final Model cand;
+    final Model problem;
     final WAModel wa;
     boolean rotSym = false;
     boolean revRotSym = false;
     boolean realTime = false;
-    boolean useBlock = false;
     int numOfCover = Integer.MAX_VALUE;
     int validCellDepth = Integer.MAX_VALUE;
 
     private boolean running;
 
     Cont() {
-        cover = new Model(null);
-        covered = new Model(new PolyArray(new boolean[20][20]));
+        cand = new Model(null);
+        problem = new Model(new PolyArray(new boolean[20][20]));
         wa = new WAModel();
     }
 
-    void setCover(PolyArray _cover) {
-        this.cover.setPoly(_cover);
+    void setCand(PolyArray _cover) {
+        this.cand.setPoly(_cover);
         updateView();
     }
 
-    void setCovered(PolyArray _covered) {
-        this.covered.setPoly(_covered);
+    void setProblem(PolyArray _covered) {
+        this.problem.setPoly(_covered);
         updateView();
     }
 
@@ -63,9 +56,9 @@ public class Cont implements AbstCont, AbstProgressMonitor {
     }
 
     public void flip(Model model, int x, int y) {
-        if (model == cover) {
+        if (model == cand) {
             flipCover(x, y);
-        } else if (model == covered) {
+        } else if (model == problem) {
             model.flip(x, y);
         } else {
             assert false;
@@ -82,26 +75,26 @@ public class Cont implements AbstCont, AbstProgressMonitor {
     }
 
     private void flipCover(int x, int y) {
-        Cell sz = new Cell(cover.getHeight(), cover.getWidth());
+        Cell sz = new Cell(cand.getHeight(), cand.getWidth());
         Cell c = new Cell(x, y);
         Set<Cell> visited = new HashSet<Cell>();
         if (rotSym) {
-            assert cover.getHeight() == cover.getWidth();
+            assert cand.getHeight() == cand.getWidth();
             assert !revRotSym;
             for (int i = 0; i < 4; i++) {
                 if (!visited.contains(c)) {
-                    cover.flip(c.x, c.y);
+                    cand.flip(c.x, c.y);
                     visited.add(c);
                 }
                 c = rot90(sz, c);
             }
         } else if (revRotSym) {
-            assert cover.getHeight() == cover.getWidth();
+            assert cand.getHeight() == cand.getWidth();
             assert !rotSym;
             for (int i = 0; i < 2; i++) {
                 for (int j = 0; j < 4; j++) {
                     if (!visited.contains(c)) {
-                        cover.flip(c.x, c.y);
+                        cand.flip(c.x, c.y);
                         visited.add(c);
                     }
                     c = rot90(sz, c);
@@ -109,7 +102,7 @@ public class Cont implements AbstCont, AbstProgressMonitor {
                 c = rev(sz, c);
             }
         } else {
-            cover.flip(c.x, c.y);
+            cand.flip(c.x, c.y);
         }
         updateView();
 
@@ -125,90 +118,110 @@ public class Cont implements AbstCont, AbstProgressMonitor {
         try {
             pw = new PrintWriter(file);
         } catch (Exception e) {
-            error(parent);
+            error(parent, "cannot open the file");
             return;
         }
         pw.println("covered:");
-        pw.println(covered.getHeight() + " " + covered.getWidth());
-        for (int i = 0; i < covered.getHeight(); i++) {
+        pw.println(problem.getHeight() + " " + problem.getWidth());
+        for (int i = 0; i < problem.getHeight(); i++) {
             String s = "";
-            for (int j = 0; j < covered.getWidth(); j++) {
-                s += covered.get(i, j) ? "#" : ".";
+            for (int j = 0; j < problem.getWidth(); j++) {
+                s += problem.get(i, j) ? "#" : ".";
             }
             pw.println(s);
         }
 
         pw.println("cover:");
-        pw.println(cover.getHeight() + " " + cover.getWidth());
-        for (int i = 0; i < cover.getHeight(); i++) {
+        pw.println(cand.getHeight() + " " + cand.getWidth());
+        for (int i = 0; i < cand.getHeight(); i++) {
             String s = "";
-            for (int j = 0; j < cover.getWidth(); j++) {
-                s += cover.get(i, j) ? "#" : ".";
+            for (int j = 0; j < cand.getWidth(); j++) {
+                s += cand.get(i, j) ? "#" : ".";
             }
             pw.println(s);
         }
         pw.flush();
     }
 
-    private void error(Component parent) {
-        JOptionPane.showMessageDialog(parent, "something is wrong.");
+    private void error(Component parent, String msg) {
+        if (msg == null) msg = "something is wrong.";
+        JOptionPane.showMessageDialog(parent, msg);
     }
 
+    /**
+     * load let the user to select the file to read, and install the cand and problem the file represents
+     * to the model of cand and problem. File chooser will remember the last directory a file is selected from.
+     * @param parent the component that triggered this operation. This is used to determine the position where the file
+     *               or error dialog is displayed.
+     */
     public void load(Component parent) {
-        JFileChooser chooser = new JFileChooser();
+        String lastDirOrNull = Prop.get("lastdir");
+        JFileChooser chooser = new JFileChooser(lastDirOrNull);
         chooser.showOpenDialog(parent);
         File file = chooser.getSelectedFile();
         if (file == null) return;
+        Prop.set("lastdir", file.getPath());
 
         Scanner sc;
         try {
             sc = new Scanner(file);
         } catch (Exception e) {
-            error(parent);
+            error(parent, "cannot open the file");
             return;
         }
-        try {
-            if (!sc.next().equals("covered:")) {
-                error(parent);
-                return;
-            }
-        } catch (Exception e) {
-            error(parent);
-            return;
-        }
+        ProblemAndCand problemAndCand = loadProblemAndCand(sc);
 
-        PolyArray _covered;
-        try {
-            _covered = PolyArray.load(sc);
-        } catch (Exception e) {
-            error(parent);
-            return;
-        }
-        try {
-            if (!sc.next().equals("cover:")) {
-                error(parent);
-                return;
+        if (problemAndCand.cand == null && problemAndCand.problem == null) {
+            if (file.getPath().endsWith(".ans")) {
+                try {
+                    problemAndCand.cand = PolyArray.load(new Scanner(file));
+                } catch (Exception e) {
+                    String msg = "failed to read file as a candidate";
+                    logger.warning(msg + ":\n" + e.toString());
+                    error(parent, msg);
+                }
+            } else {
+                try {
+                    problemAndCand.problem = PolyArray.load(new Scanner(file));
+                } catch (Exception e) {
+                    String msg = "failed to read file as a problem";
+                    logger.warning(msg + ":\n" + e.toString());
+                    error(parent, msg);
+                }
             }
-        } catch (Exception e) {
-            error(parent);
-            return;
         }
-        PolyArray _cover;
-        try {
-            _cover = PolyArray.load(sc);
-        } catch (Exception e) {
-            error(parent);
-            return;
+        if (problemAndCand.cand != null) {
+            this.cand.setPoly(problemAndCand.cand);
         }
-        this.cover.setPoly(_cover);
-        this.covered.setPoly(_covered);
+        if (problemAndCand.problem != null) {
+            this.problem.setPoly(problemAndCand.problem);
+        }
         updateView();
+    }
+
+    private ProblemAndCand loadProblemAndCand(Scanner sc) {
+        ProblemAndCand problemAndCand = new ProblemAndCand();
+        while (sc.hasNext()) {
+            String command = sc.next();
+            if (command.equals("covered:")) {
+                problemAndCand.problem = PolyArray.load(sc);
+            }
+            if (command.equals("cover:")) {
+                problemAndCand.cand = PolyArray.load(sc);
+            }
+        }
+        return problemAndCand;
+    }
+
+    class ProblemAndCand {
+        PolyArray problem;
+        PolyArray cand;
     }
 
     private void runInBackGround(JFrame parent) {
         int[][] res;
         try {
-            res = Judge.newBuilder(covered.poly, cover.poly)
+            res = Judge.newBuilder(problem.poly, cand.poly)
                     .setNumCandidates(numOfCover)
                     .setEnabledCandDepth(validCellDepth)
                     .setMonitor(this).build().judge();
@@ -217,9 +230,9 @@ public class Cont implements AbstCont, AbstProgressMonitor {
             return;
         }
         if (res == null) {
-            if (!Judge.isConnected(cover.poly)) {
+            if (!Judge.isConnected(cand.poly)) {
                 JOptionPane.showMessageDialog(parent, "OK. but not connected.");
-            } else if (!Judge.noHole(cover.poly)) {
+            } else if (!Judge.noHole(cand.poly)) {
                 JOptionPane.showMessageDialog(parent, "OK. but contains hole(s).");
             } else {
                 JOptionPane.showMessageDialog(parent, "OK.");
@@ -254,22 +267,17 @@ public class Cont implements AbstCont, AbstProgressMonitor {
     }
 
     public void expand() {
-        int h = cover.getHeight(), w = cover.getWidth();
+        int h = cand.getHeight(), w = cand.getWidth();
         boolean[][] nxt = new boolean[h + 2][w + 2];
         for (int i = 0; i < h; i++)
             for (int j = 0; j < w; j++)
-                nxt[i + 1][j + 1] = cover.get(i, j);
-        cover.setPoly(new PolyArray(nxt));
+                nxt[i + 1][j + 1] = cand.get(i, j);
+        cand.setPoly(new PolyArray(nxt));
         updateView();
     }
 
     public void setRealTimeMode(boolean b) {
         realTime = b;
-        updateView();
-    }
-
-    public void enableBlock(boolean b) {
-        useBlock = b;
         updateView();
     }
 

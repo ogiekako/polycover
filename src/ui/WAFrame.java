@@ -1,7 +1,6 @@
 package ui;
 
-import javax.swing.JDialog;
-import javax.swing.JFrame;
+import javax.swing.*;
 
 public class WAFrame extends JDialog implements AbstView{
 	public void update(){

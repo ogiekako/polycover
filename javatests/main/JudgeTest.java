@@ -5,7 +5,6 @@ import org.junit.Test;
 import util.Debug;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -161,8 +160,11 @@ public class JudgeTest {
     }
 
     // TODO: the following two tests takes too long time. Speed up judge.
+    //    computeAllStates: 0.250000s.
+    //    updatePossibleStatePairs: 21.039000s.
+    //    solving: 3.274983m.
     @Test
-    public void testYes() throws Exception {// 20m
+    public void testYes() throws Exception {// 4m
         Stopwatch latencyMetric = new Stopwatch();
         List<String> problems = allFilesUnder(new File("problem"));
         for (String probPath : problems) {
@@ -181,6 +183,11 @@ public class JudgeTest {
         }
     }
 
+    /*
+        computeAllStates: 0.881000s.
+        solving: 48.107000s.
+        updatePossibleStatePairs: 3.184600m.
+     */
     @Test
     public void testNo() throws Exception {// 42m
         // TODO: Add all *.ans files. Currenty the change will make this test too slow.

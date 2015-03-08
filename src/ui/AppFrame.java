@@ -1,20 +1,11 @@
 package ui;
-import java.awt.BorderLayout;
+
+import main.PolyArray;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JProgressBar;
-import javax.swing.JTextField;
-import main.PolyArray;
 public class AppFrame extends JFrame{
 	private final JFrame myself;
 	private final Cont cont;
@@ -28,7 +19,7 @@ public class AppFrame extends JFrame{
 		
 		this.cont=cont;
 		
-		polyPanel=new PolyPanel(cont.cover,cont);
+		polyPanel=new PolyPanel(cont.cand,cont);
 		menuBar=new MyMenuBar();
 		runProgressBar=new MyProgressBar();
 		add(polyPanel);
@@ -77,7 +68,7 @@ public class AppFrame extends JFrame{
 			
 			editMenu=new JMenu("edit");
 			this.add(editMenu);
-			final JMenuItem setCoveredPoly=new JMenuItem("set covered poly");
+			final JMenuItem setCoveredPoly=new JMenuItem("set problem poly");
 			final JCheckBoxMenuItem rotSym=new JCheckBoxMenuItem("rot sym");
 			final JCheckBoxMenuItem revRotSym=new JCheckBoxMenuItem("rev rot sym");
 			final JMenuItem expand=new JMenuItem("expand");
@@ -92,7 +83,7 @@ public class AppFrame extends JFrame{
 					frame.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 					frame.setVisible(true);
 					frame.setSize(420,280);
-					PolyPanel panel=new PolyPanel(cont.covered,cont);
+					PolyPanel panel=new PolyPanel(cont.problem,cont);
 					frame.add(panel);
 				}
 			});
@@ -125,7 +116,7 @@ public class AppFrame extends JFrame{
 			optionMenu=new JMenu("option");
 			this.add(optionMenu);
 			final JCheckBoxMenuItem realTime=new JCheckBoxMenuItem("real time mode");
-			final JMenuItem numCover=new JMenuItem("num cover");
+			final JMenuItem numCover=new JMenuItem("num cand");
 			final JMenuItem validCellDepth=new JMenuItem("insert depth");
 			optionMenu.add(realTime);
 			optionMenu.add(numCover);
@@ -138,7 +129,7 @@ public class AppFrame extends JFrame{
 			});
 			numCover.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent e){
-					String s=JOptionPane.showInputDialog(optionMenu,"numbef of cover polyomino",""+cont.numOfCover);
+					String s=JOptionPane.showInputDialog(optionMenu,"numbef of cand polyomino",""+cont.numOfCover);
 					if(s==null) return;
 					try{
 						int i=Integer.valueOf(s);
@@ -179,14 +170,14 @@ public class AppFrame extends JFrame{
 			sizeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 			sizeDialog.setVisible(true);
 			sizeDialog.setSize(150,100);
-			sizeDialog.setTitle("size of cover poly");
+			sizeDialog.setTitle("size of cand poly");
 			
 			final JPanel panel=new JPanel();
 			sizeDialog.add(panel);
 			
 			final JTextField sizeField=new JTextField("      31");
-			if(!cont.cover.isNull()){
-				sizeField.setText("      "+cont.cover.getHeight());
+			if(!cont.cand.isNull()){
+				sizeField.setText("      "+cont.cand.getHeight());
 			}
 			final JButton okButton=new JButton("OK");
 			
@@ -199,7 +190,7 @@ public class AppFrame extends JFrame{
 					try{
 						int n=Integer.valueOf(sizeField.getText().trim());
 						if(n<=0) throw new Exception();
-						cont.setCover(new PolyArray(new boolean[n][n]));
+						cont.setCand(new PolyArray(new boolean[n][n]));
 						sizeDialog.dispose();
 					}catch(Exception ex){
 						JOptionPane.showMessageDialog(panel,"specify integer > 0.");

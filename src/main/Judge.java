@@ -1,10 +1,16 @@
 package main;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Logger;
+
 import ui.AbstProgressMonitor;
 import util.Debug;
-
-import java.util.*;
-import java.util.logging.Logger;
 
 public class Judge {
     static Logger logger = Logger.getLogger(Judge.class.getName());
@@ -291,10 +297,22 @@ public class Judge {
         if (currentNumCands >= numCandidates) return null;
 
         long rest = ((1L << numCellsInProblem) - 1) ^ mask;
+        boolean doMonitor = currentNumCands == 0;
+        int numAllStates = 0;
+        for (List<State> ss : maskToState.values())numAllStates += ss.size();
+        int cnt = 0;
+
         for (Map.Entry<Long, List<State>> e : maskToState.entrySet()) {
-            if (Long.highestOneBit(rest) != Long.highestOneBit(e.getKey())) continue;
+            if (Long.highestOneBit(rest) != Long.highestOneBit(e.getKey())){
+              cnt += e.getValue().size();
+              continue;
+            }
             loop:
             for (State s : e.getValue()) {
+                if (doMonitor) {
+                  monitor.setValue(50 + 50 * cnt / numAllStates);
+                }
+                cnt++;
                 if (s.hopeless) continue;
                 for (State t : stateStack) {
                     if (!t.possiblePairs.contains(s) && !s.possiblePairs.contains(t)) continue loop;

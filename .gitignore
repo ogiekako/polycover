@@ -2,3 +2,5 @@
 .project
 .idea
 polycover.properties
+*.iml
+.DS_Store

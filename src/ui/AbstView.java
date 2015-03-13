@@ -1,5 +1,6 @@
 package ui;
 
-public interface AbstView{
-	void update();
+public interface AbstView {
+
+  void update();
 }

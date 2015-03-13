@@ -1,4 +1,5 @@
 package main;
 
-public class NoCellException extends Exception{
+public class NoCellException extends Exception {
+
 }

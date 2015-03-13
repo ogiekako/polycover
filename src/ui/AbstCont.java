@@ -1,7 +1,8 @@
 package ui;
 
-public interface AbstCont{
-	void addView(AbstView view);
-	
-	void updateView();
+public interface AbstCont {
+
+  void addView(AbstView view);
+
+  void updateView();
 }

@@ -1,48 +1,49 @@
 package ui;
 
-import main.AbstPoly;
+import main.Poly;
 import main.PolyArray;
 
-public class Model implements AbstModel, AbstPoly {
-    AbstPoly poly;
+public class Model implements AbstModel, Poly {
 
-    public void flip(int x, int y) {
-        poly.flip(x, y);
-    }
+  Poly poly;
 
-    public boolean get(int x, int y) {
-        return poly.get(x, y);
-    }
+  public void flip(int x, int y) {
+    poly.flip(x, y);
+  }
 
-    public int getHeight() {
-        return poly.getHeight();
-    }
+  public boolean get(int x, int y) {
+    return poly.get(x, y);
+  }
 
-    public int getWidth() {
-        return poly.getWidth();
-    }
+  public int getHeight() {
+    return poly.getHeight();
+  }
 
-    public AbstPoly flip() {
-        throw new UnsupportedOperationException();
-    }
+  public int getWidth() {
+    return poly.getWidth();
+  }
 
-    public AbstPoly rot90() {
-        throw new UnsupportedOperationException();
-    }
+  public Poly flip() {
+    throw new UnsupportedOperationException();
+  }
 
-    public AbstPoly trim() {
-        throw new UnsupportedOperationException();
-    }
+  public Poly rot90() {
+    throw new UnsupportedOperationException();
+  }
 
-    Model(AbstPoly poly) {
-        this.poly = poly;
-    }
+  public Poly trim() {
+    throw new UnsupportedOperationException();
+  }
 
-    public void setPoly(PolyArray poly) {
-        this.poly = poly;
-    }
+  Model(Poly poly) {
+    this.poly = poly;
+  }
 
-    public boolean isNull() {
-        return poly == null;
-    }
+  public void setPoly(PolyArray poly) {
+    this.poly = poly;
+  }
+
+  public boolean isNull() {
+    return poly == null;
+  }
 }

@@ -3,6 +3,7 @@ package main;
 public class Cell {
 
   public final int x, y;
+  int hash = 0;
 
   public Cell(int x, int y) {
     this.x = x;
@@ -18,31 +19,20 @@ public class Cell {
   }
 
   public int hashCode() {
+    if (hash != 0) return hash;
     final int prime = 31;
-    int result = 1;
-    result = prime * result + x;
-    result = prime * result + y;
-    return result;
+    hash = 1;
+    hash = prime * hash + x;
+    hash = prime * hash + y;
+    return hash;
   }
 
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
     }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
     Cell other = (Cell) obj;
-    if (x != other.x) {
-      return false;
-    }
-    if (y != other.y) {
-      return false;
-    }
-    return true;
+    return x == other.x && y == other.y;
   }
 
   public String toString() {

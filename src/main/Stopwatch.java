@@ -11,6 +11,7 @@ public class Stopwatch {
 
   Map<String, Long> accum = new HashMap<String, Long>();
   Map<String, Long> start = new HashMap<String, Long>();
+  Map<String, Long> latestLap = new HashMap<String, Long>();
   String previousName = null;
 
   public void tick(String name) {
@@ -28,7 +29,9 @@ public class Stopwatch {
     if (!accum.containsKey(name)) {
       accum.put(name, 0L);
     }
-    accum.put(name, accum.get(name) + System.currentTimeMillis() - start.get(name));
+    long lap = System.currentTimeMillis() - start.get(name);
+    latestLap.put(name, lap);
+    accum.put(name, accum.get(name) + lap);
     start.remove(name);
   }
 
@@ -58,23 +61,25 @@ public class Stopwatch {
     class E implements Comparable<E> {
 
       String name;
-      long timeMs;
+      long totalMs;
+      long lapMs;
 
       @Override
       public int compareTo(E o) {
-        return Long.compare(timeMs, o.timeMs);
+        return Long.compare(totalMs, o.totalMs);
       }
     }
     List<E> es = new ArrayList<E>();
-    for (Map.Entry<String, Long> et : accum.entrySet()) {
+    for (String name : accum.keySet()) {
       E e = new E();
-      e.name = et.getKey();
-      e.timeMs = et.getValue();
+      e.name = name;
+      e.totalMs = accum.get(name);
+      e.lapMs = latestLap.get(name);
       es.add(e);
     }
     Collections.sort(es);
     for (E e : es) {
-      b.append(String.format("%s: %s.\n", e.name, toStr(e.timeMs)));
+      b.append(String.format("%s: lap %s, total %s.\n", e.name, toStr(e.lapMs), toStr(e.totalMs)));
     }
     return b.toString();
   }

@@ -155,6 +155,7 @@ public class Judge {
       s.possiblePairs = new ArrayList<State>();
     }
 
+    latencyMetric.tick("computeForbiddenMoves");
     Set<Cell>[][] forbiddenMoves =
         new Set[numCandPattern][numCandPattern]; // cand[i] cannot be moved by these dirs not to overlap with cand[j].
     int numForbiddenMoves = 0;
@@ -170,24 +171,34 @@ public class Judge {
         numForbiddenMoves += forbiddenMoves[i][j].size();
       }
     }
+    latencyMetric.tack("computeForbiddenMoves");
     logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
     latencyMetric.tick("updatePossibleStatePairs");
     updatePossibleStatePairs(candidates, states.length, forbiddenMoves);
+    latencyMetric.tack("updatePossibleStatePairs");
+    latencyMetric.tick("cleanUpStates1");
     cleanUpStates();
+    latencyMetric.tack("cleanUpStates1");
+    latencyMetric.tick("computeUseless");
     for (State s : states) {
-      for (State t : states) if (s != t) {
-        if ((s.mask | t.mask) == t.mask) {
-          if (t.possiblePairs.containsAll(s.possiblePairs)) {
-            if (!s.possiblePairs.containsAll(t.possiblePairs) || s.myId > t.myId) {
-              s.hopeless = true;
-              break;
+      for (State t : states) {
+        if (s != t) {
+          if ((s.mask | t.mask) == t.mask) {
+            if (t.possiblePairs.containsAll(s.possiblePairs)) {
+              if (!s.possiblePairs.containsAll(t.possiblePairs) || s.myId > t.myId) {
+                s.hopeless = true;
+                break;
+              }
             }
           }
         }
       }
     }
+    latencyMetric.tack("computeUseless");
+    latencyMetric.tick("cleanUpStates2");
     cleanUpStates();
     computeMaskToState();
+    latencyMetric.tack("cleanUpStates2");
     int numPromisingStates = 0;
     int numEdges = 0;
 
@@ -201,7 +212,6 @@ public class Judge {
     logger.info(Debug.toString("num promising states:", numPromisingStates));
     logger.info(Debug.toString("num edges in the state graph:", numEdges));
 
-    latencyMetric.tack("updatePossibleStatePairs");
     numCandidates = Math.min(numCandidates, numCellsInProblem);
 
     latencyMetric.tick("solving");
@@ -297,43 +307,36 @@ public class Judge {
     computeMaskToState();
 
     int numAllCombination = numStates * maskToState.size();
-    for (int i = 0, progress = 0; i < numStates; i++) {
-      long mask = states[i].mask;
-      // TODO: for state S, if there is a cell in problem such that any state cannot cover the cell,
-      // we can remove the S from consideration.
+    int progress = 0;
+    for (State state : states) {
+      long mask = state.mask;
       for (Map.Entry<Long, List<State>> e : maskToState.entrySet()) {
         progress++;
-        if (monitor != null) {
-          monitor.setValue(10 + progress * 40 / numAllCombination);
-        }
+        monitor.setValue(10 + progress * 40 / numAllCombination);
 
-        if ((states[i].mask & e.getKey()) != 0) {
+        if ((state.mask & e.getKey()) != 0) {
           continue;
         }
 
         for (State s : e.getValue()) {
-          Cell d = states[i].candMoveVec.sub(s.candMoveVec);
-          if (forbiddenMoves[states[i].candId][s.candId].contains(d)) {
+          Cell d = state.candMoveVec.sub(s.candMoveVec);
+          if (forbiddenMoves[state.candId][s.candId].contains(d)) {
             continue;
           }
 
-          int
-              h =
-              Math.min(candidates[states[i].candId].getHeight(), candidates[s.candId].getHeight());
-          int
-              w =
-              Math.min(candidates[states[i].candId].getWidth(), candidates[s.candId].getWidth());
+          int h =
+              Math.min(candidates[state.candId].getHeight(), candidates[s.candId].getHeight());
+          int w =
+              Math.min(candidates[state.candId].getWidth(), candidates[s.candId].getWidth());
           if (Math.abs(d.x) < h - enabledCandDepth && Math.abs(d.y) < w - enabledCandDepth) {
             continue;
           }
           mask |= e.getKey();
-//          if (i < s.myId) {
-          states[i].possiblePairs.add(s);
-//          }
+          state.possiblePairs.add(s);
         }
       }
       if (mask != (1L << numCellsInProblem) - 1) {
-        states[i].hopeless = true;
+        state.hopeless = true;
       }
     }
   }
@@ -351,8 +354,10 @@ public class Judge {
       @Override
       public int compare(Long o1, Long o2) {
         int c1 = Long.bitCount(o1), c2 = Long.bitCount(o2);
-        if (c1 != c2) return - (c1 - c2); // Larger bit count.
-        return - Long.compare(o1, o2);// Higher set bit.
+        if (c1 != c2) {
+          return -(c1 - c2); // Larger bit count.
+        }
+        return -Long.compare(o1, o2);// Higher set bit.
       }
     });
     masks = new long[tmpMasks.length];

@@ -14,7 +14,9 @@ public class PolyArray implements Poly {
 
   @Override
   public boolean get(int x, int y) {
-    assert 0 <= x && x < array.length && 0 <= y && y < array[0].length;
+    if (!(0 <= x && x < array.length && 0 <= y && y < array[0].length)) {
+      throw new IllegalArgumentException(x + " " + y);
+    }
     return array[x][y];
   }
 

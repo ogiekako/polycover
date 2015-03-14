@@ -80,4 +80,38 @@ public class PolyAnalyzer {
       }
     }
   }
+
+  public boolean contains(Poly target) {
+    Poly p = poly.trim();
+    target = target.trim();
+    for (int k = 0; k < 2; k++) {
+      p = p.flip();
+      for (int l = 0; l < 4; l++) {
+        p = p.rot90();
+        int h = p.getHeight();
+        int w = p.getWidth();
+        for (int oi = 0; oi < h; oi++) {
+          for (int oj = 0; oj < w; oj++) {
+            boolean yes = true;
+            loop:
+            for (int i = 0; i < target.getHeight(); i++) {
+              for (int j = 0; j < target.getWidth(); j++) {
+                if (target.get(i, j)) {
+                  int ni = oi + i, nj = oj + j;
+                  if (ni >= h || nj >= w || !p.get(oi + i, oj + j)) {
+                    yes = false;
+                    break loop;
+                  }
+                }
+              }
+            }
+            if (yes) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
 }

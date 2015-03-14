@@ -4,12 +4,11 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
 
 import util.Debug;
+import util.FileUtil;
 
 public class JudgeTestLong {
 
@@ -32,7 +31,7 @@ public class JudgeTestLong {
   @Test
   public void testYes() throws Exception {
     Stopwatch latencyMetric = new Stopwatch();
-    List<String> problems = allFilesUnder(new File("problem"));
+    List<String> problems = FileUtil.allFilesUnder(new File("problem"));
     for (String probPath : problems) {
       if (probPath.endsWith(".yes")) {
         String ansPath = probPath.replaceAll("^problem/", "ans/").replaceAll("\\.yes$", ".ans");
@@ -53,10 +52,10 @@ public class JudgeTestLong {
 
   @Test
   public void testNo() throws Exception {
-    List<String> testAnsPaths = allFilesUnder(new File("ans"));
+    List<String> testAnsPaths = FileUtil.allFilesUnder(new File("ans"));
 
     Stopwatch latencyMetric = new Stopwatch();
-    List<String> problems = allFilesUnder(new File("problem"));
+    List<String> problems = FileUtil.allFilesUnder(new File("problem"));
     for (String probPath : problems) {
       if (probPath.endsWith(".no")) {
         for (String ansPath : testAnsPaths) {
@@ -75,23 +74,4 @@ public class JudgeTestLong {
     }
   }
 
-  // Return absolutePaths.
-  List<String> allFilesUnder(File dir) {
-    File[] files = dir.listFiles();
-    if (files == null) {
-      return Collections.emptyList();
-    }
-    List<String> res = new ArrayList<String>();
-    for (File file : files) {
-      if (!file.exists()) {
-        continue;
-      }
-      if (file.isDirectory()) {
-        res.addAll(allFilesUnder(file));
-      } else if (file.isFile()) {
-        res.add(file.getPath());
-      }
-    }
-    return res;
-  }
 }

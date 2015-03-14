@@ -38,7 +38,7 @@ public class JudgeTestLong {
         if (!new File(ansPath).exists()) {
           ansPath = probPath.replaceAll("^problem/", "ans/").replaceAll("\\.yes$", ".dup");
         }
-        Debug.debug(probPath, ansPath);
+        System.err.printf("%s %s\n", probPath, ansPath);
         Scanner probIn = new Scanner(new File(probPath));
         Scanner ansIn = new Scanner(new File(ansPath));
         PolyArray prob = PolyArray.load(probIn);
@@ -46,7 +46,6 @@ public class JudgeTestLong {
         int[][] result =
             Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
         Assert.assertNull(Debug.toString(result), result);
-
         System.err.println(latencyMetric.summary());
       }
     }
@@ -61,7 +60,7 @@ public class JudgeTestLong {
     for (String probPath : problems) {
       if (probPath.endsWith(".no")) {
         for (String ansPath : testAnsPaths) {
-          Debug.debug(probPath, ansPath);
+          System.err.printf("%s %s\n", probPath, ansPath);
           Scanner probIn = new Scanner(new File(probPath));
           Scanner ansIn = new Scanner(new File(ansPath));
           PolyArray prob = PolyArray.load(probIn);

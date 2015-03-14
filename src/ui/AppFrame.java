@@ -35,10 +35,6 @@ public class AppFrame extends JFrame {
 
     setVisible(true);
     setSize(600, 400);
-
-    if (Prop.get("lastpath") != null) {
-      cont.load(this, new File(Prop.get("lastpath")));
-    }
   }
 
   class MyProgressBar extends JProgressBar implements ProgressMonitor {

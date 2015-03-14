@@ -122,7 +122,7 @@ public class Cont implements AbstCont, ProgressMonitor {
   }
 
   public void save(Component parent) {
-    JFileChooser chooser = new JFileChooser();
+    JFileChooser chooser = new JFileChooser("");
     chooser.showSaveDialog(parent);
     File file = chooser.getSelectedFile();
 
@@ -175,7 +175,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     try {
       sc = new Scanner(file);
     } catch (Exception e) {
-      error(parent, "cannot open the file");
+      error(parent, "cannot open the file:" + file.getPath());
       return;
     }
     ProblemAndCand problemAndCand = loadProblemAndCand(sc);

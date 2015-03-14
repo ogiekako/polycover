@@ -20,8 +20,11 @@ public class Judge {
   Poly problem;
   // the candidate, or the polyomino whose multiple copies are used to cover the target.
   Poly candidate;
-  // number of candidates that can be used.
-  int numCandidates = (int) 1e9;
+  // min number of candidates can be used. In other words, at least this number of candidates
+  // should be used to cover the problem.
+  int minNumCands = 1;
+  // max number of candidates can be used.
+  int maxNumCands = (int) 1e9;
   int enabledCandDepth = (int) 1e9;
   AbstProgressMonitor monitor = new AbstProgressMonitor() {
     @Override
@@ -59,8 +62,13 @@ public class Judge {
       return this;
     }
 
-    public Builder setNumCandidates(int numCandidates) {
-      judge.numCandidates = numCandidates;
+    public Builder setMinNumCands(int minNumCands) {
+      judge.minNumCands = minNumCands;
+      return this;
+    }
+
+    public Builder setMaxNumCands(int maxNumCands) {
+      judge.maxNumCands = maxNumCands;
       return this;
     }
 
@@ -81,7 +89,7 @@ public class Judge {
 
   /**
    * problem が candidate で,重ならずに覆えるかどうかを判定する. 覆えない場合は,null を返す. 覆える場合は,覆った状態を表すint[][] を返す. 0は空白,1~
-   * が candidate のある位置を表し, -1 ~ が, problem と candidate が重なっていることを表す. numCandidates は,使用する candidate
+   * が candidate のある位置を表し, -1 ~ が, problem と candidate が重なっていることを表す. maxNumCands は,使用する candidate
    * の最大枚数を示す. enabledCandDepth,有効なセルのバウンディングボックスからの距離を示す.例えば,1なら,周辺のセルしかみない.
    * また,その内側にはブロックがおいてあるかのように,入れない.
    */
@@ -212,7 +220,7 @@ public class Judge {
     logger.info(Debug.toString("num promising states:", numPromisingStates));
     logger.info(Debug.toString("num edges in the state graph:", numEdges));
 
-    numCandidates = Math.min(numCandidates, numCellsInProblem);
+    maxNumCands = Math.min(maxNumCands, numCellsInProblem);
 
     latencyMetric.tick("solving");
     List<State> ans = dfs(new ArrayList<State>(), 0, 0);
@@ -437,9 +445,9 @@ public class Judge {
 
   List<State> dfs(List<State> stateStack, long mask, int currentNumCands) {
     if (mask == (1L << numCellsInProblem) - 1) {
-      return stateStack;
+      return currentNumCands >= minNumCands ? stateStack : null;
     }
-    if (currentNumCands >= numCandidates) {
+    if (currentNumCands >= maxNumCands) {
       return null;
     }
 

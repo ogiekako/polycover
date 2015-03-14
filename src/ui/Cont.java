@@ -16,7 +16,6 @@ import main.Cell;
 import main.Judge;
 import main.NoCellException;
 import main.PolyArray;
-import main.Prop;
 
 public class Cont implements AbstCont, AbstProgressMonitor {
 
@@ -28,7 +27,8 @@ public class Cont implements AbstCont, AbstProgressMonitor {
   boolean rotSym = false;
   boolean revRotSym = false;
   boolean realTime = false;
-  int numOfCover = Integer.MAX_VALUE;
+  int maxNumCand = Integer.MAX_VALUE;
+  int minNumCand = 1;
   int validCellDepth = Integer.MAX_VALUE;
 
   private boolean running;
@@ -169,16 +169,7 @@ public class Cont implements AbstCont, AbstProgressMonitor {
    * @param parent the component that triggered this operation. This is used to determine the
    *               position where the file or error dialog is displayed.
    */
-  public void load(Component parent) {
-    String lastDirOrNull = Prop.get("lastdir");
-    JFileChooser chooser = new JFileChooser(lastDirOrNull);
-    chooser.showOpenDialog(parent);
-    File file = chooser.getSelectedFile();
-    if (file == null) {
-      return;
-    }
-    Prop.set("lastdir", file.getPath());
-
+  public void load(Component parent, File file) {
     Scanner sc;
     try {
       sc = new Scanner(file);
@@ -240,7 +231,8 @@ public class Cont implements AbstCont, AbstProgressMonitor {
     int[][] res;
     try {
       res = Judge.newBuilder(problem.poly, cand.poly)
-          .setNumCandidates(numOfCover)
+          .setMinNumCands(minNumCand)
+          .setMaxNumCands(maxNumCand)
           .setEnabledCandDepth(validCellDepth)
           .setMonitor(this).build().judge();
     } catch (NoCellException ex) {
@@ -303,8 +295,13 @@ public class Cont implements AbstCont, AbstProgressMonitor {
     updateView();
   }
 
-  public void setNumCoer(int i) {
-    numOfCover = i;
+  public void setMinNumCand(int minNumCand) {
+    this.minNumCand = minNumCand;
+    updateView();
+  }
+
+  public void setMaxNumCand(int maxNumCand) {
+    this.maxNumCand = maxNumCand;
     updateView();
   }
 

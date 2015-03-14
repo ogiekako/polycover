@@ -19,7 +19,9 @@ public class Cell {
   }
 
   public int hashCode() {
-    if (hash != 0) return hash;
+    if (hash != 0) {
+      return hash;
+    }
     final int prime = 31;
     hash = 1;
     hash = prime * hash + x;

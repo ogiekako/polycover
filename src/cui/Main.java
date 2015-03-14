@@ -25,8 +25,7 @@ public class Main {
     Scanner candIn = new Scanner(new File(candFileName));
     PolyArray problem = PolyArray.load(problemIn);
     PolyArray cand = PolyArray.load(candIn);
-    boolean
-        ok =
+    boolean ok =
         Judge.newBuilder(problem, cand).setEnabledCandDepth(maxDepth).build().judge() == null;
     System.out.println(ok ? "OK" : "NG");
   }

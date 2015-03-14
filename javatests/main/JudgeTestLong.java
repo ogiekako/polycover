@@ -13,13 +13,8 @@ import util.Debug;
 
 public class JudgeTestLong {
 
-
-  // TODO: the following two tests takes too long time. Speed up judge.
-  //    computeAllStates: 0.250000s.
-  //    updatePossibleStatePairs: 21.039000s.
-  //    solving: 3.274983m.
   @Test
-  public void testYes() throws Exception {// 4m
+  public void testYes() throws Exception {
     Stopwatch latencyMetric = new Stopwatch();
     List<String> problems = allFilesUnder(new File("problem"));
     for (String probPath : problems) {
@@ -40,13 +35,8 @@ public class JudgeTestLong {
     }
   }
 
-  /*
-      computeAllStates: 0.881000s.
-      solving: 48.107000s.
-      updatePossibleStatePairs: 3.184600m.
-   */
   @Test
-  public void testNo() throws Exception {// 42m
+  public void testNo() throws Exception {
     // TODO: Add all *.ans files. Currenty the change will make this test too slow.
     String[] testAnsPaths = {"ans/hexomino/8.ans", "ans/hexomino/C.ans"};
 
@@ -60,8 +50,7 @@ public class JudgeTestLong {
           Scanner ansIn = new Scanner(new File(ansPath));
           PolyArray prob = PolyArray.load(probIn);
           PolyArray ans = PolyArray.load(ansIn);
-          int[][]
-              result =
+          int[][] result =
               Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
           Assert.assertNotNull(result);
 

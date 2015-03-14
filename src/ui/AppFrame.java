@@ -3,10 +3,12 @@ package ui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
 import javax.swing.*;
 
 import main.PolyArray;
+import main.Prop;
 
 public class AppFrame extends JFrame {
 
@@ -33,6 +35,10 @@ public class AppFrame extends JFrame {
 
     setVisible(true);
     setSize(600, 400);
+
+    if (Prop.get("lastpath") != null) {
+      cont.load(this, new File(Prop.get("lastpath")));
+    }
   }
 
   class MyProgressBar extends JProgressBar implements AbstProgressMonitor {
@@ -70,7 +76,15 @@ public class AppFrame extends JFrame {
       });
       load.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-          cont.load(fileMenu);
+          String lastDirOrNull = Prop.get("lastpath");
+          JFileChooser chooser = new JFileChooser(lastDirOrNull);
+          chooser.showOpenDialog(fileMenu);
+          File file = chooser.getSelectedFile();
+          if (file == null) {
+            return;
+          }
+          Prop.set("lastpath", file.getPath());
+          cont.load(fileMenu, file);
         }
       });
 
@@ -144,19 +158,21 @@ public class AppFrame extends JFrame {
       });
       numCover.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-          String
-              s =
-              JOptionPane
-                  .showInputDialog(optionMenu, "numbef of cand polyomino", "" + cont.numOfCover);
+          String s = JOptionPane
+              .showInputDialog(optionMenu, "number of cand polyominos",
+                               cont.minNumCand + "-" + cont.maxNumCand);
           if (s == null) {
             return;
           }
           try {
-            int i = Integer.valueOf(s);
-            if (i <= 0) {
+            String[] ss = s.split("-");
+            int mn = Integer.valueOf(ss[0]);
+            int mx = Integer.valueOf(ss[1]);
+            if (mx <= 0 || mn <= 0 || mn > mx) {
               throw new Exception();
             }
-            cont.setNumCoer(i);
+            cont.setMinNumCand(mn);
+            cont.setMaxNumCand(mx);
           } catch (Exception ex) {
             JOptionPane.showMessageDialog(numCover, "number must be integer > 0.");
           }

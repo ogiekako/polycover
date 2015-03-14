@@ -12,7 +12,8 @@ Links:
 ----------
 問題とその解のライブラリは、
 problem/ と ans/ 以下にある。problem 以下には問題ファイルがあり、その解決状況は拡張子で表されている。
-problem/path/to/foo.yes には解が見つかっており、ans/path/to/foo.ans がその解である。
+problem/path/to/foo.yes には解が見つかっており、ans/path/to/foo.ans または ans/path/to/foo.dup がその解である。
+拡張子 .dup は全く同一の .ans ファイルが存在することを意味する。
 problem/path/to/foo.no は未解決問題。
 problem/path/to/foo.meh は、それのサブセットにすでに解が見つかっていることを意味する。
 
@@ -20,8 +21,8 @@ ui.Main で起動されるUIで、file を load した時の挙動について�
 covered:
 cover:
 のどちらかが含まれる行を読むと、その後をそれぞれ問題、解候補として読み込む。1つのファイルに問題、解候補が複数含まれていても良い。
-どちらもなく、拡張子が .ans の場合は、それを解候補として読み込む。
-拡張子が .ans 以外の場合は、それを問題として読み込む。
+どちらもなく、拡張子が .ans または .dup の場合は、それを解候補として読み込む。
+拡張子が .ans または .dup 以外の場合は、それを問題として読み込む。
 
 Scripts
 -------

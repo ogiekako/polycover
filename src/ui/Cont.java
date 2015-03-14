@@ -181,7 +181,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     ProblemAndCand problemAndCand = loadProblemAndCand(sc);
 
     if (problemAndCand.cand == null && problemAndCand.problem == null) {
-      if (file.getPath().endsWith(".ans")) {
+      if (file.getPath().endsWith(".ans") || file.getPath().endsWith(".dup")) {
         try {
           problemAndCand.cand = PolyArray.load(new Scanner(file));
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Run on polycover directory.
 # For problems, only files with extension .no will be iterated.
+# For cands, only files with extension .ans will be iterated.
 # Example:
 # src/searchall.sh --min_num_cand=2 --max_num_cand=3 problem/hexomino ans/hexomino 2> /dev/null
 declare min_num_cand=""
@@ -49,6 +50,9 @@ for a in $(find $problemDir -mindepth 1 -type f); do
 		continue
 	fi
 	for b in $(find $candDir -mindepth 1 -type f); do
+        if [[ ${b##*.} != "ans" ]]; then
+            continue
+        fi
 		declare maxD=$(($(head -n 1 $b | cut -d ' ' -f 1)/2+1))
 		declare ok=1
 		for d in $(seq 1 $maxD); do
@@ -66,3 +70,4 @@ for a in $(find $problemDir -mindepth 1 -type f); do
 		fi
 	done
 done
+1100_0100_0111_0001

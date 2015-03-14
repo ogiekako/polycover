@@ -35,13 +35,15 @@ public class JudgeTestLong {
     for (String probPath : problems) {
       if (probPath.endsWith(".yes")) {
         String ansPath = probPath.replaceAll("^problem/", "ans/").replaceAll("\\.yes$", ".ans");
+        if (!new File(ansPath).exists()) {
+          ansPath = probPath.replaceAll("^problem/", "ans/").replaceAll("\\.yes$", ".dup");
+        }
         Debug.debug(probPath, ansPath);
         Scanner probIn = new Scanner(new File(probPath));
         Scanner ansIn = new Scanner(new File(ansPath));
         PolyArray prob = PolyArray.load(probIn);
         PolyArray ans = PolyArray.load(ansIn);
-        int[][]
-            result =
+        int[][] result =
             Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
         Assert.assertNull(Debug.toString(result), result);
 
@@ -52,10 +54,10 @@ public class JudgeTestLong {
 
   @Test
   public void testNo() throws Exception {
-    List<String> testAnsPaths = FileUtil.allFilesUnder(new File("ans"));
+    List<String> testAnsPaths = FileUtil.allFilesUnder(new File("ans/hexomino"));
 
     Stopwatch latencyMetric = new Stopwatch();
-    List<String> problems = FileUtil.allFilesUnder(new File("problem"));
+    List<String> problems = FileUtil.allFilesUnder(new File("problem/hexomino"));
     for (String probPath : problems) {
       if (probPath.endsWith(".no")) {
         for (String ansPath : testAnsPaths) {

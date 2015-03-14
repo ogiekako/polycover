@@ -14,6 +14,22 @@ import util.Debug;
 public class JudgeTestLong {
 
   @Test
+  public void testT() throws Exception {
+    Stopwatch latencyMetric = new Stopwatch();
+    String probPath = "problem/hexomino/T.yes";
+    String ansPath = "ans/hexomino/T.ans";
+    Scanner probIn = new Scanner(new File(probPath));
+    Scanner ansIn = new Scanner(new File(ansPath));
+    PolyArray prob = PolyArray.load(probIn);
+    PolyArray ans = PolyArray.load(ansIn);
+    int[][] result =
+        Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
+    Assert.assertNull(Debug.toString(result), result);
+
+    System.err.println(latencyMetric.summary());
+  }
+
+  @Test
   public void testYes() throws Exception {
     Stopwatch latencyMetric = new Stopwatch();
     List<String> problems = allFilesUnder(new File("problem"));
@@ -37,8 +53,7 @@ public class JudgeTestLong {
 
   @Test
   public void testNo() throws Exception {
-    // TODO: Add all *.ans files. Currenty the change will make this test too slow.
-    String[] testAnsPaths = {"ans/hexomino/8.ans", "ans/hexomino/C.ans"};
+    List<String> testAnsPaths = allFilesUnder(new File("ans"));
 
     Stopwatch latencyMetric = new Stopwatch();
     List<String> problems = allFilesUnder(new File("problem"));

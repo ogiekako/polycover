@@ -41,7 +41,7 @@ public class AppFrame extends JFrame {
     }
   }
 
-  class MyProgressBar extends JProgressBar implements AbstProgressMonitor {
+  class MyProgressBar extends JProgressBar implements ProgressMonitor {
 
     public void setValue(int n) {
       super.setValue(n);

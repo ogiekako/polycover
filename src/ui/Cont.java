@@ -15,9 +15,10 @@ import javax.swing.*;
 import main.Cell;
 import main.Judge;
 import main.NoCellException;
+import main.PolyAnalyzer;
 import main.PolyArray;
 
-public class Cont implements AbstCont, AbstProgressMonitor {
+public class Cont implements AbstCont, ProgressMonitor {
 
   static Logger logger = Logger.getLogger(Cont.class.getName());
 
@@ -50,7 +51,7 @@ public class Cont implements AbstCont, AbstProgressMonitor {
   }
 
   private final List<AbstView> viewList = new ArrayList<AbstView>();
-  private final List<AbstProgressMonitor> monitorList = new ArrayList<AbstProgressMonitor>();
+  private final List<ProgressMonitor> monitorList = new ArrayList<ProgressMonitor>();
 
   @Override
   public void addView(AbstView view) {
@@ -240,9 +241,10 @@ public class Cont implements AbstCont, AbstProgressMonitor {
       return;
     }
     if (res == null) {
-      if (!Judge.isConnected(cand.poly)) {
+      PolyAnalyzer analyzer = PolyAnalyzer.of(cand.poly);
+      if (!analyzer.isConnected()) {
         JOptionPane.showMessageDialog(parent, "OK. but not connected.");
-      } else if (!Judge.noHole(cand.poly)) {
+      } else if (!analyzer.hasNoHole()) {
         JOptionPane.showMessageDialog(parent, "OK. but contains hole(s).");
       } else {
         JOptionPane.showMessageDialog(parent, "OK.");
@@ -313,7 +315,7 @@ public class Cont implements AbstCont, AbstProgressMonitor {
   /**
    * monitorには,0~100のあいだの数値を与える.
    */
-  public void addProgressMonitor(AbstProgressMonitor monitor) {
+  public void addProgressMonitor(ProgressMonitor monitor) {
     monitorList.add(monitor);
   }
 
@@ -324,7 +326,7 @@ public class Cont implements AbstCont, AbstProgressMonitor {
       return;
     }
     prevProgress = n;
-    for (AbstProgressMonitor monitor : monitorList) {
+    for (ProgressMonitor monitor : monitorList) {
       monitor.setValue(n);
     }
   }

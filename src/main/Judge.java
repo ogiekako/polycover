@@ -2,6 +2,7 @@ package main;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ public class Judge {
   int numCellsInProblem;
 
   State[] states;
+  long[] masks;
   Map<Long, List<State>> maskToState;
 
   Judge(Poly problem, Poly candidate) {
@@ -153,8 +155,7 @@ public class Judge {
       s.possiblePairs = new ArrayList<State>();
     }
 
-    Set<Cell>[][]
-        forbiddenMoves =
+    Set<Cell>[][] forbiddenMoves =
         new Set[numCandPattern][numCandPattern]; // cand[i] cannot be moved by these dirs not to overlap with cand[j].
     int numForbiddenMoves = 0;
     for (int i = 0; i < numCandPattern; i++) {
@@ -172,13 +173,33 @@ public class Judge {
     logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
     latencyMetric.tick("updatePossibleStatePairs");
     updatePossibleStatePairs(candidates, states.length, forbiddenMoves);
+    cleanUpStates();
+    for (State s : states) {
+      for (State t : states) if (s != t) {
+        if ((s.mask | t.mask) == t.mask) {
+          if (t.possiblePairs.containsAll(s.possiblePairs)) {
+            if (!s.possiblePairs.containsAll(t.possiblePairs) || s.myId > t.myId) {
+              s.hopeless = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+    cleanUpStates();
+    computeMaskToState();
     int numPromisingStates = 0;
+    int numEdges = 0;
+
     for (State s : states) {
       if (!s.hopeless) {
         numPromisingStates++;
+        numEdges += s.possiblePairs.size();
       }
     }
+
     logger.info(Debug.toString("num promising states:", numPromisingStates));
+    logger.info(Debug.toString("num edges in the state graph:", numEdges));
 
     latencyMetric.tack("updatePossibleStatePairs");
     numCandidates = Math.min(numCandidates, numCellsInProblem);
@@ -225,15 +246,55 @@ public class Judge {
     return res;
   }
 
+  private void cleanUpStates() {
+    boolean changed = false;
+    int sz = states.length;
+    states = removeHopeless(states);
+    if (sz != states.length) {
+      changed = true;
+    }
+    for (State s : states) {
+      sz = s.possiblePairs.size();
+      s.possiblePairs = Arrays.asList(removeHopeless(s.possiblePairs.toArray(new State[0])));
+      if (s.possiblePairs.size() != sz) {
+        changed = true;
+      }
+    }
+    if (changed) {
+      if (markHopeless()) {
+        cleanUpStates();
+      }
+    }
+  }
+
+  private boolean markHopeless() {
+    boolean hasHopeless = false;
+    for (State s : states) {
+      long mask = s.mask;
+      for (State t : s.possiblePairs) {
+        mask |= t.mask;
+      }
+      if (mask != (1L << numCellsInProblem) - 1) {
+        s.hopeless = true;
+        hasHopeless = true;
+      }
+    }
+    return hasHopeless;
+  }
+
+  private State[] removeHopeless(State[] states) {
+    List<State> res = new ArrayList<State>();
+    for (State s : states) {
+      if (!s.hopeless) {
+        res.add(s);
+      }
+    }
+    return res.toArray(new State[res.size()]);
+  }
+
   private void updatePossibleStatePairs(Poly[] candidates, int numStates,
                                         Set<Cell>[][] forbiddenMoves) {
-    maskToState = new HashMap<Long, List<State>>();
-    for (State s : states) {
-      if (!maskToState.containsKey(s.mask)) {
-        maskToState.put(s.mask, new ArrayList<State>());
-      }
-      maskToState.get(s.mask).add(s);
-    }
+    computeMaskToState();
 
     int numAllCombination = numStates * maskToState.size();
     for (int i = 0, progress = 0; i < numStates; i++) {
@@ -266,14 +327,37 @@ public class Judge {
             continue;
           }
           mask |= e.getKey();
-          if (i < s.myId) {
-            states[i].possiblePairs.add(s);
-          }
+//          if (i < s.myId) {
+          states[i].possiblePairs.add(s);
+//          }
         }
       }
       if (mask != (1L << numCellsInProblem) - 1) {
         states[i].hopeless = true;
       }
+    }
+  }
+
+  private void computeMaskToState() {
+    maskToState = new HashMap<Long, List<State>>();
+    for (State s : states) {
+      if (!maskToState.containsKey(s.mask)) {
+        maskToState.put(s.mask, new ArrayList<State>());
+      }
+      maskToState.get(s.mask).add(s);
+    }
+    Long[] tmpMasks = maskToState.keySet().toArray(new Long[0]);
+    Arrays.sort(tmpMasks, new Comparator<Long>() {
+      @Override
+      public int compare(Long o1, Long o2) {
+        int c1 = Long.bitCount(o1), c2 = Long.bitCount(o2);
+        if (c1 != c2) return - (c1 - c2); // Larger bit count.
+        return - Long.compare(o1, o2);// Higher set bit.
+      }
+    });
+    masks = new long[tmpMasks.length];
+    for (int i = 0; i < masks.length; i++) {
+      masks[i] = tmpMasks[i];
     }
   }
 
@@ -361,20 +445,20 @@ public class Judge {
       numAllStates += ss.size();
     }
     int cnt = 0;
-
-    for (Map.Entry<Long, List<State>> e : maskToState.entrySet()) {
-      if (Long.highestOneBit(rest) != Long.highestOneBit(e.getKey())) {
-        cnt += e.getValue().size();
+    for (long cur : masks) {
+      List<State> nxts = maskToState.get(cur);
+      if (Long.highestOneBit(rest) != Long.highestOneBit(cur)) {
+        cnt += nxts.size();
         continue;
       }
       loop:
-      for (State s : e.getValue()) {
+      for (State s : nxts) {
         if (doMonitor) {
           monitor.setValue(50 + 50 * cnt / numAllStates);
         }
         cnt++;
         if (s.hopeless) {
-          continue;
+          throw new AssertionError();
         }
         for (State t : stateStack) {
           if (!t.possiblePairs.contains(s) && !s.possiblePairs.contains(t)) {
@@ -382,7 +466,7 @@ public class Judge {
           }
         }
         stateStack.add(s);
-        List<State> res = dfs(stateStack, mask | e.getKey(), currentNumCands + 1);
+        List<State> res = dfs(stateStack, mask | cur, currentNumCands + 1);
         if (res != null) {
           return res;
         }

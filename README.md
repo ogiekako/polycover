@@ -25,9 +25,12 @@ cover:
 
 Scripts
 -------
-To update poly.jar, run:
++ To update poly.jar, run:
 `./run.sh`
 
-`src/bit2poly.rb`: 一行に 0100 1111 (この場合はYペントミノ) などと表されているファイルを標準入力から読み込み、指定したディレクトリ以下に本プログラムの形式でファイルを作成する。拡張子は.no となる。
-`src/no2meh.sh`: .no のファイルのなかで、実は .meh であるものを列挙し、拡張子を .meh に変える。
++ `src/bit2poly.rb`: 一行に 0100 1111 (この場合はYペントミノ) などと表されているファイルを標準入力から読み込み、指定したディレクトリ以下に本プログラムの形式でファイルを作成する。拡張子は.no となる。
 
++ `src/no2meh.sh`: .no のファイルのなかで、実は .meh であるものを列挙し、拡張子を .meh に変える。
+
++ `src/searchall.sh` 例えば、`src --min_num_cand=2 --max_num_cand=3 problem/hexomino ans 2> /dev/null`
+とすると、cand を2枚以上、3枚以下使うという条件のもとで、problem/hexomino 以下にある拡張子が .no の問題と、ans 以下にあるすべてのポリオミノとの総当りを行い、どれだけ深く刺すのを許した時におおえてしまうかをすべてのペアに対して出力する。

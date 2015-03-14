@@ -5,3 +5,4 @@ polycover.properties
 *.iml
 .DS_Store
 bin
+polycover.properties

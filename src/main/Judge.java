@@ -152,7 +152,54 @@ public class Judge {
       assert res[cell.x - minX][cell.y - minY] > 0;
       res[cell.x - minX][cell.y - minY] = -res[cell.x - minX][cell.y - minY];
     }
+    loop:
+    for (int i = 0; i < 2; i++) {
+      res = flip(res);
+      for (int j = 0; j < 4; j++) {
+        res = rot(res);
+        if (hasCandAsIs(res)) {
+          break loop;
+        }
+      }
+      if (i == 1) {
+        throw new AssertionError();
+      }
+    }
     return res;
+  }
+
+  // (i,j) -> (j,w-1-i)
+  private int[][] rot(int[][] res) {
+    int h = res.length, w = res[0].length;
+    int[][] a = new int[w][h];
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        a[j][h - 1 - i] = res[i][j];
+      }
+    }
+    return a;
+  }
+
+  // reverse each row.
+  private int[][] flip(int[][] res) {
+    int[][] a = new int[res.length][res[0].length];
+    for (int i = 0; i < a.length; i++) {
+      for (int j = 0; j < a[0].length; j++) {
+        a[i][j] = res[i][a[0].length - 1 - j];
+      }
+    }
+    return a;
+  }
+
+  private boolean hasCandAsIs(int[][] res) {
+    boolean[][] bs = new boolean[res.length][res[0].length];
+    for (int i = 0; i < res.length; i++) {
+      for (int j = 0; j < res[0].length; j++) {
+        bs[i][j] = Math.abs(res[i][j]) == 1;
+      }
+    }
+    Poly p = new PolyArray(bs);
+    return p.trim().equals(candidate);
   }
 
   private List<Node> solve(int numEnabledCandCells) {

@@ -53,13 +53,14 @@ public class JudgeTestLong {
 
   @Test
   public void testNo() throws Exception {
-    List<String> testAnsPaths = FileUtil.allFilesUnder(new File("ans/hexomino"));
+    List<String> testAnsPaths = FileUtil.allFilesUnder(new File("ans"));
 
     Stopwatch latencyMetric = new Stopwatch();
-    List<String> problems = FileUtil.allFilesUnder(new File("problem/hexomino"));
+    List<String> problems = FileUtil.allFilesUnder(new File("problem"));
     for (String probPath : problems) {
       if (probPath.endsWith(".no")) {
         for (String ansPath : testAnsPaths) {
+          if (!ansPath.endsWith(".ans"))continue;
           System.err.printf("%s %s\n", probPath, ansPath);
           Scanner probIn = new Scanner(new File(probPath));
           Scanner ansIn = new Scanner(new File(ansPath));

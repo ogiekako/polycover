@@ -1,7 +1,7 @@
 package ui;
 
-import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -121,18 +121,8 @@ public class Cont implements AbstCont, ProgressMonitor {
     }
   }
 
-  public void save(Component parent) {
-    JFileChooser chooser = new JFileChooser("");
-    chooser.showSaveDialog(parent);
-    File file = chooser.getSelectedFile();
-
-    PrintWriter pw;
-    try {
-      pw = new PrintWriter(file);
-    } catch (Exception e) {
-      error(parent, "cannot open the file");
-      return;
-    }
+  public void save(File file) throws IOException {
+    PrintWriter pw = new PrintWriter(file);
     pw.println("covered:");
     pw.println(problem.getHeight() + " " + problem.getWidth());
     for (int i = 0; i < problem.getHeight(); i++) {
@@ -155,29 +145,26 @@ public class Cont implements AbstCont, ProgressMonitor {
     pw.flush();
   }
 
-  private void error(Component parent, String msg) {
-    if (msg == null) {
-      msg = "something is wrong.";
+  public void saveCand(File file) throws IOException {
+    PrintWriter pw = new PrintWriter(file);
+    pw.println(cand.getHeight() + " " + cand.getWidth());
+    for (int i = 0; i < cand.getHeight(); i++) {
+      String s = "";
+      for (int j = 0; j < cand.getWidth(); j++) {
+        s += cand.get(i, j) ? "#" : ".";
+      }
+      pw.println(s);
     }
-    JOptionPane.showMessageDialog(parent, msg);
+    pw.flush();
   }
 
   /**
    * load let the user to select the file to read, and install the cand and problem the file
    * represents to the model of cand and problem. File chooser will remember the last directory a
    * file is selected from.
-   *
-   * @param parent the component that triggered this operation. This is used to determine the
-   *               position where the file or error dialog is displayed.
    */
-  public void load(Component parent, File file) {
-    Scanner sc;
-    try {
-      sc = new Scanner(file);
-    } catch (Exception e) {
-      error(parent, "cannot open the file:" + file.getPath());
-      return;
-    }
+  public void load(File file) throws IOException {
+    Scanner sc = new Scanner(file);
     ProblemAndCand problemAndCand = loadProblemAndCand(sc);
 
     if (problemAndCand.cand == null && problemAndCand.problem == null) {
@@ -187,7 +174,8 @@ public class Cont implements AbstCont, ProgressMonitor {
         } catch (Exception e) {
           String msg = "failed to read file as a candidate";
           logger.warning(msg + ":\n" + e.toString());
-          error(parent, msg);
+
+          throw new IOException(msg, e);
         }
       } else {
         try {
@@ -195,7 +183,7 @@ public class Cont implements AbstCont, ProgressMonitor {
         } catch (Exception e) {
           String msg = "failed to read file as a problem";
           logger.warning(msg + ":\n" + e.toString());
-          error(parent, msg);
+          throw new IOException(msg, e);
         }
       }
     }
@@ -221,7 +209,6 @@ public class Cont implements AbstCont, ProgressMonitor {
     }
     return problemAndCand;
   }
-
   class ProblemAndCand {
 
     PolyArray problem;

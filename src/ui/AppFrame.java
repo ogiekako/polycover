@@ -3,12 +3,8 @@ package ui;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 
 import javax.swing.*;
-
-import main.PolyArray;
-import main.Prop;
 
 public class AppFrame extends JFrame {
 
@@ -52,37 +48,8 @@ public class AppFrame extends JFrame {
     private final JMenu runMenu;
 
     public MyMenuBar() {
-      fileMenu = new JMenu("file");
+      fileMenu = new FileMenu(AppFrame.this, cont);
       this.add(fileMenu);
-      final JMenuItem nw = new JMenuItem("new");
-      final JMenuItem save = new JMenuItem("save");
-      final JMenuItem load = new JMenuItem("load");
-      fileMenu.add(nw);
-      fileMenu.add(load);
-      fileMenu.add(save);
-      nw.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          nw();
-        }
-      });
-      save.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          cont.save(fileMenu);
-        }
-      });
-      load.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          String lastDirOrNull = Prop.get("lastpath");
-          JFileChooser chooser = new JFileChooser(lastDirOrNull);
-          chooser.showOpenDialog(fileMenu);
-          File file = chooser.getSelectedFile();
-          if (file == null) {
-            return;
-          }
-          Prop.set("lastpath", file.getPath());
-          cont.load(fileMenu, file);
-        }
-      });
 
       editMenu = new JMenu("edit");
       this.add(editMenu);
@@ -206,41 +173,6 @@ public class AppFrame extends JFrame {
       });
     }
 
-    private void nw() {
 
-      final JDialog sizeDialog = new JDialog(myself);
-      sizeDialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-      sizeDialog.setVisible(true);
-      sizeDialog.setSize(150, 100);
-      sizeDialog.setTitle("size of cand poly");
-
-      final JPanel panel = new JPanel();
-      sizeDialog.add(panel);
-
-      final JTextField sizeField = new JTextField("      31");
-      if (!cont.cand.isNull()) {
-        sizeField.setText("      " + cont.cand.getHeight());
-      }
-      final JButton okButton = new JButton("OK");
-
-      panel.add(new JLabel("size:"));
-      panel.add(sizeField);
-      panel.add(okButton);
-
-      okButton.addActionListener(new ActionListener() {
-        public void actionPerformed(ActionEvent e) {
-          try {
-            int n = Integer.valueOf(sizeField.getText().trim());
-            if (n <= 0) {
-              throw new Exception();
-            }
-            cont.setCand(new PolyArray(new boolean[n][n]));
-            sizeDialog.dispose();
-          } catch (Exception ex) {
-            JOptionPane.showMessageDialog(panel, "specify integer > 0.");
-          }
-        }
-      });
-    }
   }
 }

@@ -48,7 +48,7 @@ public class FileValidityTest {
       } else {
         for (SP v : sps) {
           if (u != v && !v.dup && v.poly.equals(u.poly)) {
-            Assert.fail(u.f);
+            Assert.fail(String.format("%s and %s are same.", u.f, v.f));
           }
         }
       }

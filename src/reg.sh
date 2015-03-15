@@ -4,12 +4,15 @@
 #   path/to/prob.dup is created as a copy of some.ans
 p=$1
 a=$2
-if [ ! -e $p ]; then
-    echo "$p does not exist" >&2
-    exit 1
-fi
 if [ ! -e $a ]; then
     echo "$a does not exist" >&2
+    exit 1
+fi
+p2=${p%%.*}
+cp $a "ans/${p2##problem/}.dup"
+
+if [ ! -e $p ]; then
+    echo "$p does not exist" >&2
     exit 1
 fi
 #if [ ! $p =~ *.no ]; then
@@ -18,7 +21,5 @@ fi
 if [[ $a =~ *.dup ]]; then
     exit 0
 fi
-p2=${p%%.*}
-echo $p "${p2}.yes"
-cp $a "ans/${p2##problem/}.dup"
+mv $p "${p2}.yes"
 

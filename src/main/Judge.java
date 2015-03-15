@@ -17,7 +17,7 @@ import util.Debug;
 
 public class Judge {
 
-  static Logger logger = Logger.getLogger(Judge.class.getName());
+  public static Logger logger = Logger.getLogger(Judge.class.getName());
   // the problem, or the polyomino to be covered.
   Poly problem;
   // the candidate, or the polyomino whose multiple copies are used to cover the target.
@@ -162,6 +162,11 @@ public class Judge {
         }
       }
       if (i == 1) {
+        Debug.debug("res:");
+        for (int[] a:res) {
+          Debug.debug(a);
+        }
+        Debug.debug("cand:\n", candidate);
         throw new AssertionError();
       }
     }
@@ -199,7 +204,7 @@ public class Judge {
       }
     }
     Poly p = new PolyArray(bs);
-    return p.trim().equals(candidate);
+    return p.trim().equals(computePeripherlaPoly(candidate, opt.allowedCandDepth).trim());
   }
 
   private List<Node> solve(int numEnabledCandCells) {
@@ -538,6 +543,14 @@ public class Judge {
       enabledCells[i] = cellsOnPeripheral.toArray(new Cell[cellsOnPeripheral.size()]);
     }
     return enabledCells;
+  }
+
+  private Poly computePeripherlaPoly(Poly poly, int depth) {
+    boolean[][] res = new boolean[poly.getHeight()][poly.getWidth()];
+    for (Cell c : getCellsOnPeripheral(poly, depth)) {
+      res[c.x][c.y] = true;
+    }
+    return new PolyArray(res);
   }
 
   private List<Cell> getCellsOnPeripheral(Poly poly, int depth) {

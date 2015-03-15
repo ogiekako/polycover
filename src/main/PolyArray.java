@@ -7,9 +7,14 @@ public class PolyArray implements Poly {
 
   boolean[][] array;
 
-  public PolyArray(boolean[][] array) {
-    assert array.length > 0 && array[0].length > 0;
-    this.array = array;
+  public PolyArray(boolean[][] a) {
+    assert a.length > 0 && a[0].length > 0;
+    array = new boolean[a.length][a[0].length];
+    for (int i = 0; i < a.length; i++) {
+      for (int j = 0; j < a[0].length; j++) {
+        array[i][j] = a[i][j];
+      }
+    }
   }
 
   @Override
@@ -161,5 +166,22 @@ public class PolyArray implements Poly {
     }
     PolyArray other = (PolyArray) obj;
     return Arrays.deepEquals(array, other.array);
+  }
+
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append(getHeight() + " " + getWidth() + "\n");
+    for (int i = 0; i < getHeight(); i++) {
+      for (int j = 0; j < getWidth(); j++) {
+        b.append(array[i][j] ? '#' : '.');
+      }
+      b.append('\n');
+    }
+    return b.toString();
+  }
+
+  @Override
+  public Poly clone() {
+    return new PolyArray(array);
   }
 }

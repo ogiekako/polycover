@@ -1,6 +1,6 @@
 package main;
 
-public class Cell {
+public class Cell implements Comparable<Cell>{
 
   public final int x, y;
   int hash = 0;
@@ -41,4 +41,9 @@ public class Cell {
     return "(" + x + "," + y + ")";
   }
 
+  @Override
+  public int compareTo(Cell o) {
+    if (x != o.x) return x - o.x;
+    return y - o.y;
+  }
 }

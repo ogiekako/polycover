@@ -35,6 +35,8 @@ public class Model implements AbstModel, Poly {
     throw new UnsupportedOperationException();
   }
 
+  public Poly clone() {throw new UnsupportedOperationException(); }
+
   Model(Poly poly) {
     this.poly = poly;
   }

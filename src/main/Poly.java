@@ -30,4 +30,6 @@ public interface Poly {
    * 周辺の空白を取り除いたpoly を返す.
    */
   Poly trim();
+
+  Poly clone();
 }

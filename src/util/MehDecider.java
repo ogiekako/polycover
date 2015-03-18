@@ -10,6 +10,12 @@ import main.PolyArray;
 
 public class MehDecider {
 
+  enum Type {
+    Meh,
+    Yes,
+    No,
+  }
+
   /*
   Usage: java util.MehDecider problem/some.no problem
   output YES if under problem dir there is a .yes poly which is contained in some.no .
@@ -20,11 +26,11 @@ public class MehDecider {
     }
     String path = args[0];
     String pDir = args[1];
-    boolean meh = isMeh(path, pDir);
+    boolean meh = decide(path, pDir) == Type.Meh;
     System.out.println(meh ? "YES" : "NO");
   }
 
-  public static boolean isMeh(String path, String probDir) throws FileNotFoundException {
+  public static Type decide(String path, String probDir) throws FileNotFoundException {
     PolyArray target = PolyArray.load(new Scanner(new File(path)));
     PolyAnalyzer analyzer = PolyAnalyzer.of(target);
 
@@ -35,11 +41,11 @@ public class MehDecider {
         continue;
       }
       PolyArray yesPoly = PolyArray.load(new Scanner(new File(p)));
-      if (analyzer.contains(yesPoly)) {
+      if (!target.equals(yesPoly) && analyzer.contains(yesPoly)) {
         meh = true;
         break;
       }
     }
-    return meh;
+    return meh ? Type.Meh : path.endsWith(".yes") ? Type.Yes : Type.No;
   }
 }

@@ -1,28 +1,37 @@
 package util;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MehDeciderTest {
 
   @Test
   public void testIsMeh() throws Exception {
-    List<String> problems = FileUtil.allFilesUnder(new File("problem/7"));
+    List<String> problems = FileUtil.allFilesUnder(new File("problem"));
+    List<String> badPaths = new ArrayList<String>();
     for (String p : problems) {
-      Debug.debug(p);
-      boolean meh = MehDecider.isMeh(p, "problem");
-      if (p.endsWith("meh")) {
-        Assert.assertTrue(meh);
-      } else if (p.endsWith("yes")) {
-        Assert.assertTrue(meh);
-      } else if (p.endsWith("no")) {
-        Assert.assertFalse(meh);
+      MehDecider.Type type = MehDecider.decide(p, "problem");
+      if (p.endsWith(".meh")) {
+        if (type != MehDecider.Type.Meh) {
+          badPaths.add(p);
+        }
+      } else if (p.endsWith(".yes")) {
+        if (type != MehDecider.Type.Yes) {
+          badPaths.add(p);
+        }
+      } else if (p.endsWith(".no")) {
+        if (type != MehDecider.Type.No) {
+          badPaths.add(p);
+        }
       } else {
         throw new AssertionError();
       }
+    }
+    if (!badPaths.isEmpty()) {
+      throw new AssertionError(badPaths);
     }
   }
 }

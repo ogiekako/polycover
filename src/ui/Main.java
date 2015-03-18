@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import javax.swing.*;
 
 import main.Prop;
+import ui.view.AppFrame;
 
 public class Main {
 
@@ -27,19 +28,28 @@ public class Main {
         }
       }
     }
+    String lastprobfile = Prop.get("lastprobfile");
+    if (lastprobfile != null) {
+      try {
+        cont.load(new File(lastprobfile));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
     if (args.length > 0) {
       try {
         Prop.set("lastprobfile", args[0]);
         cont.load(new File(args[0]));
       } catch (IOException e) {
-        DialogShower.error(appFrame, e.getMessage());
+        DialogShower.message(appFrame, e.getMessage());
       }
     }
     if (args.length > 1) {
       try {
         cont.load(new File(args[1]));
       } catch (IOException e) {
-        DialogShower.error(appFrame, e.getMessage());
+        DialogShower.message(appFrame, e.getMessage());
       }
 
     }

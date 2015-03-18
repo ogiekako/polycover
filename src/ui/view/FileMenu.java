@@ -1,4 +1,4 @@
-package ui;
+package ui.view;
 
 
 import java.awt.event.ActionEvent;
@@ -10,6 +10,8 @@ import javax.swing.*;
 
 import main.PolyArray;
 import main.Prop;
+import ui.Cont;
+import ui.DialogShower;
 
 class FileMenu extends JMenu {
 
@@ -39,7 +41,7 @@ class FileMenu extends JMenu {
         try {
           cont.load(file);
         } catch (IOException e1) {
-          DialogShower.error(FileMenu.this, e1.getMessage());
+          DialogShower.message(FileMenu.this, e1.getMessage());
         }
       }
     });
@@ -57,7 +59,7 @@ class FileMenu extends JMenu {
         try {
           cont.save(file);
         } catch (IOException e1) {
-          DialogShower.error(FileMenu.this, e1.getMessage());
+          DialogShower.message(FileMenu.this, e1.getMessage());
         }
       }
     });
@@ -82,7 +84,7 @@ class FileMenu extends JMenu {
         try {
           cont.saveCand(file);
         } catch (IOException e1) {
-          DialogShower.error(FileMenu.this, e1.getMessage());
+          DialogShower.message(FileMenu.this, e1.getMessage());
         }
       }
     });

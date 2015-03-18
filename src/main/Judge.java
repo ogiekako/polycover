@@ -10,14 +10,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import ui.ProgressMonitor;
 import util.Debug;
 
 public class Judge {
 
   public static Logger logger = Logger.getLogger(Judge.class.getName());
+  static {
+    logger.setLevel(Level.OFF);
+  }
   // the problem, or the polyomino to be covered.
   Poly problem;
   // the candidate, or the polyomino whose multiple copies are used to cover the target.

@@ -2,7 +2,9 @@ package ui;
 
 import javax.swing.*;
 
-public class WAFrame extends JDialog implements AbstView {
+import ui.view.View;
+
+public class WAFrame extends JDialog implements View {
 
   public void update() {
     if (cont.wa.isNull()) {

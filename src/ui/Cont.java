@@ -12,55 +12,64 @@ import java.util.logging.Logger;
 
 import javax.swing.*;
 
+import ai.AI;
 import main.Cell;
 import main.Judge;
 import main.NoCellException;
+import main.Poly;
 import main.PolyAnalyzer;
 import main.PolyArray;
+import main.ProgressMonitor;
+import ui.view.View;
 
 public class Cont implements AbstCont, ProgressMonitor {
 
   static Logger logger = Logger.getLogger(Cont.class.getName());
 
-  final Model cand;
-  final Model problem;
+  public final Model cand;
+  public final Model problem;
   final WAModel wa;
   boolean rotSym = false;
   boolean revRotSym = false;
   boolean realTime = false;
-  int maxNumCand = Integer.MAX_VALUE;
-  int minNumCand = 1;
-  int validCellDepth = Integer.MAX_VALUE;
+  //// Judge ////
+  public int maxNumCand = Integer.MAX_VALUE;
+  public int minNumCand = 1;
+  public int validCellDepth = Integer.MAX_VALUE;
+  //// AI ////
+  public AI.Option aiOption = new AI.Option();
+  public int maxAllowedDepth;
+  SwingWorker<Integer, Integer> currentWorker = null;
 
   private boolean running;
 
-  Cont() {
+  public Cont() {
     cand = new Model(null);
     problem = new Model(new PolyArray(new boolean[20][20]));
     wa = new WAModel();
   }
 
-  void setCand(PolyArray _cover) {
-    this.cand.setPoly(_cover);
+  public void setCand(Poly cand) {
+    this.cand.setPoly(cand);
     updateView();
   }
 
-  void setProblem(PolyArray _covered) {
+  public void setProblem(PolyArray _covered) {
     this.problem.setPoly(_covered);
     updateView();
   }
 
-  private final List<AbstView> viewList = new ArrayList<AbstView>();
-  private final List<ProgressMonitor> monitorList = new ArrayList<ProgressMonitor>();
+  private final List<View> viewList = new ArrayList<View>();
+  private final List<main.ProgressMonitor> monitorList = new ArrayList<main.ProgressMonitor>();
 
   @Override
-  public void addView(AbstView view) {
+  public void addView(View view) {
     viewList.add(view);
   }
 
   @Override
   public void updateView() {
-    for (AbstView view : viewList) {
+    for (View view : viewList) {
       view.update();
     }
   }
@@ -117,7 +126,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     updateView();
 
     if (realTime) {
-      run(null);
+      judge(null);
     }
   }
 
@@ -209,13 +218,29 @@ public class Cont implements AbstCont, ProgressMonitor {
     }
     return problemAndCand;
   }
+
   class ProblemAndCand {
 
     PolyArray problem;
     PolyArray cand;
   }
 
-  private void runInBackGround(JFrame parent) {
+  public void judge(final JFrame parent) {
+    if (running) {
+      return;
+    }
+    SwingWorker<Integer, Integer> sw = new SwingWorker<Integer, Integer>() {
+      protected Integer doInBackground() throws Exception {
+        running = true;
+        judgeInBackground(parent);
+        running = false;
+        return 0;
+      }
+    };
+    sw.execute();
+  }
+
+  private void judgeInBackground(JFrame parent) {
     int[][] res;
     try {
       res = Judge.newBuilder(problem.poly, cand.poly)
@@ -240,21 +265,6 @@ public class Cont implements AbstCont, ProgressMonitor {
       wa.setArray(res);
       updateView();
     }
-  }
-
-  public void run(final JFrame parent) {
-    if (running) {
-      return;
-    }
-    SwingWorker<Integer, Integer> sw = new SwingWorker<Integer, Integer>() {
-      protected Integer doInBackground() throws Exception {
-        running = true;
-        runInBackGround(parent);
-        running = false;
-        return 0;
-      }
-    };
-    sw.execute();
   }
 
   public void setRotSym(boolean b) {
@@ -299,10 +309,52 @@ public class Cont implements AbstCont, ProgressMonitor {
     updateView();
   }
 
+  //// AI ////
+  public void setAiOption(AI.Option opt) {
+    this.aiOption = opt;
+  }
+
+  AI ai;
+  public static interface AICallback {
+    void done(boolean aborted, AI.Result best);
+  }
+
+  public void ai(final AICallback callback) {
+    currentWorker = new SwingWorker<Integer, Integer>() {
+
+      @Override
+      protected Integer doInBackground() throws Exception {
+        ai = AI.builder(problem.clone())
+            .setOption(aiOption)
+            .setMonitor(Cont.this)
+            .addBestResultMonitor(
+                new AI.BestResultMonitor() {
+                  @Override
+                  public void update(AI.Result result) {
+                    Cont.this.setCand(result.convertedCand);
+                  }
+                }).build();
+        AI.Result best = ai.solve(cand.clone());
+        cand.setPoly(best.convertedCand);
+        maxAllowedDepth = best.maxAllowableDepth;
+        updateView();
+        callback.done(ai.abort, best);
+        return 0;
+      }
+    };
+    currentWorker.execute();
+  }
+
+  public void abortAI() {
+    if (ai != null) {
+      ai.abort();
+    }
+  }
+
   /**
    * monitorには,0~100のあいだの数値を与える.
    */
-  public void addProgressMonitor(ProgressMonitor monitor) {
+  public void addProgressMonitor(main.ProgressMonitor monitor) {
     monitorList.add(monitor);
   }
 
@@ -313,7 +365,7 @@ public class Cont implements AbstCont, ProgressMonitor {
       return;
     }
     prevProgress = n;
-    for (ProgressMonitor monitor : monitorList) {
+    for (main.ProgressMonitor monitor : monitorList) {
       monitor.setValue(n);
     }
   }

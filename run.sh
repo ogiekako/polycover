@@ -1,7 +1,10 @@
 #!/bin/bash
-pushd src
-mkdir -p ../bin
-javac -d ../bin ui/Main.java
-cd ../bin
-jar cfm ../poly.jar ../META-INF/MANIFEST.MF ./*
+declare cur=$(pwd)
+declare -r bin="$(mktemp -d /tmp/temp.XXXXXX)"
+javac -d $bin -sourcepath src src/ui/Main.java
+
+cp -r resource/* $bin
+pushd $bin
+jar cfm "$cur/poly.jar" "$cur/META-INF/MANIFEST.MF" ./*
 popd
+

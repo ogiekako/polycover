@@ -1,9 +1,8 @@
 package ui;
 
 import main.Poly;
-import main.PolyArray;
 
-public class Model implements AbstModel, Poly {
+public class Model implements Poly {
 
   Poly poly;
 
@@ -24,25 +23,32 @@ public class Model implements AbstModel, Poly {
   }
 
   public Poly flip() {
-    throw new UnsupportedOperationException();
+    return poly.rot90();
   }
 
   public Poly rot90() {
-    throw new UnsupportedOperationException();
+    return poly.rot90();
   }
 
   public Poly trim() {
-    throw new UnsupportedOperationException();
+    return poly.trim();
   }
 
-  public Poly clone() {throw new UnsupportedOperationException(); }
+  public Poly clone() {
+    return poly.clone();
+  }
 
   Model(Poly poly) {
     this.poly = poly;
   }
 
-  public void setPoly(PolyArray poly) {
+  public void setPoly(Poly poly) {
     this.poly = poly;
+  }
+
+  @Override
+  public String toString() {
+    return poly.toString();
   }
 
   public boolean isNull() {

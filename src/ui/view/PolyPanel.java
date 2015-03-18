@@ -1,4 +1,4 @@
-package ui;
+package ui.view;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -9,8 +9,10 @@ import java.awt.event.MouseEvent;
 import javax.swing.*;
 
 import main.Cell;
+import ui.Cont;
+import ui.Model;
 
-public class PolyPanel extends JPanel implements AbstView {
+public class PolyPanel extends JPanel implements View {
 
   public void update() {
     getParent().getParent().repaint();

@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-import main.Judge;
 import main.NoCellException;
 import main.PolyArray;
 
-public class Main {
+public class Judger {
 
   /*
   Usage:
@@ -26,13 +25,13 @@ public class Main {
     while (args[p].startsWith("--")) {
       String opt = args[p++];
       if (opt.startsWith("--maxdepth")) {
-        maxDepth = Integer.valueOf(opt.replace("--maxdepth=",""));
+        maxDepth = Integer.valueOf(opt.replace("--maxdepth=", ""));
       }
       if (opt.startsWith("--min_num_cand")) {
-        minNumCand = Integer.valueOf(opt.replace("--min_num_cand=",""));
+        minNumCand = Integer.valueOf(opt.replace("--min_num_cand=", ""));
       }
       if (opt.startsWith("--max_num_cand")) {
-        maxNumCand = Integer.valueOf(opt.replace("--max_num_cand=",""));
+        maxNumCand = Integer.valueOf(opt.replace("--max_num_cand=", ""));
       }
     }
     String problemFileName = args[p++];
@@ -42,7 +41,7 @@ public class Main {
     PolyArray problem = PolyArray.load(problemIn);
     PolyArray cand = PolyArray.load(candIn);
     boolean ok =
-        Judge.newBuilder(problem, cand)
+        main.Judge.newBuilder(problem, cand)
             .setEnabledCandDepth(maxDepth)
             .setMinNumCands(minNumCand)
             .setMaxNumCands(maxNumCand).build().judge() == null;

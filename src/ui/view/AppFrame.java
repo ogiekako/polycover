@@ -1,10 +1,13 @@
-package ui;
+package ui.view;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
+import ui.Cont;
 
 public class AppFrame extends JFrame {
 
@@ -23,17 +26,33 @@ public class AppFrame extends JFrame {
 
     polyPanel = new PolyPanel(cont.cand, cont);
     menuBar = new MyMenuBar();
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
     runProgressBar = new MyProgressBar();
+    panel.add(runProgressBar);
+
+    Image img = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/img/stop.png"));
+    JButton stop = new JButton(new ImageIcon(img));
+    stop.addActionListener(new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        AppFrame.this.cont.abortAI();
+      }
+    });
+    stop.setBorder(new EmptyBorder(1, 1, 1, 1));
+    panel.add(stop);
+    panel.setBorder(new EmptyBorder(0, 0, 0, 2));
+    panel.validate();
     add(polyPanel);
     setJMenuBar(menuBar);
-    add(runProgressBar, BorderLayout.SOUTH);
+    add(panel, BorderLayout.SOUTH);
     cont.addProgressMonitor(runProgressBar);
 
     setVisible(true);
-    setSize(600, 400);
+    setSize(600, 650);
   }
 
-  class MyProgressBar extends JProgressBar implements ProgressMonitor {
+  class MyProgressBar extends JProgressBar implements main.ProgressMonitor {
 
     public void setValue(int n) {
       super.setValue(n);
@@ -164,15 +183,23 @@ public class AppFrame extends JFrame {
 
       runMenu = new JMenu("run");
       this.add(runMenu);
-      JMenuItem run = new JMenuItem("run");
-      runMenu.add(run);
+      JMenuItem run = new JMenuItem("judge");
       run.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-          cont.run(myself);
+          cont.judge(myself);
         }
       });
+      runMenu.add(run);
+      JMenuItem runAI = new JMenuItem("ai");
+      runAI.addActionListener(new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+          AIDialog d = new AIDialog(cont, runMenu);
+          d.setModal(true);
+        }
+      });
+      runMenu.add(runAI);
     }
-
 
   }
 }

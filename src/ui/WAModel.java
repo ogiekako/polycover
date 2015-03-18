@@ -1,6 +1,6 @@
 package ui;
 
-public class WAModel implements AbstModel {
+public class WAModel {
 
   int[][] array;
 

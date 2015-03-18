@@ -22,6 +22,9 @@ import main.PolyAnalyzer;
 import main.PolyArray;
 import main.ProgressMonitor;
 
+/**
+ * Monitorable and abortable AI.
+ */
 public class AI {
 
   private static final Logger logger = Logger.getLogger(AI.class.getName());
@@ -29,50 +32,11 @@ public class AI {
   public static final int INF = (int) 1e9;
   private ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
   private Option opt = new Option();
-  private List<BestResultMonitor> bestResultMonitors = new ArrayList<BestResultMonitor>();
-
-  private void tellBestResult(Result result) {
-    for (BestResultMonitor m : bestResultMonitors) {
-      m.update(result);
-    }
-  }
-
-  public static AI.Builder builder(Poly problem) {
-    return new AI.Builder(problem);
-  }
 
   public boolean abort = false;
 
   public void abort() {
     abort = true;
-  }
-
-  public static class Builder {
-
-    private AI ai = new AI();
-
-    private Builder(Poly problem) {
-      ai.prob = problem;
-    }
-
-    public AI build() {
-      return ai;
-    }
-
-    public Builder setOption(Option opt) {
-      ai.opt = opt;
-      return this;
-    }
-
-    public Builder setMonitor(ProgressMonitor monitor) {
-      ai.monitor = monitor;
-      return this;
-    }
-
-    public Builder addBestResultMonitor(BestResultMonitor m) {
-      ai.bestResultMonitors.add(m);
-      return this;
-    }
   }
 
   public static class Result {
@@ -84,11 +48,6 @@ public class AI {
       this.convertedCand = convertedCand;
       this.maxAllowableDepth = maxAllowableDepth;
     }
-  }
-
-  public static interface BestResultMonitor {
-
-    void update(Result result);
   }
 
   public static class Option {
@@ -116,41 +75,20 @@ public class AI {
   private AI() {
   }
 
-  public static void main(String[] args) throws FileNotFoundException {
-    Judge.logger.setLevel(Level.OFF);
-
-    if (args.length == 0) {
-      args = new String[2];
-      args[0] = "problem/9/111100_000111_000001_000001.meh";
-      args[1] = "ans/hexomino/W.ans";
-    }
-
-    String probPath = args[0];
-    String initCandPath = args[1];
-    Poly prob = PolyArray.load(new Scanner(new File(probPath)));
-    Poly cand = PolyArray.load(new Scanner(new File(initCandPath)));
-    Poly res = AI.builder(prob).build().solve(cand).convertedCand;
-    if (res == null) {
-      System.out.println("Failed");
-    } else {
-      System.out.println(res);
-    }
-  }
-
   Poly prob;
   State bestState;
   Set<Integer> seenStateHash = new HashSet<Integer>();
   TreeSet<State> stateQueue = new TreeSet<State>();
   int n;
 
-  private void updateAndTellBestState(State s) {
-    bestState = s;
-    tellBestResult(new Result(s.cand, s.maxAllowableDepth));
-  }
-
   public Result solve(Poly seed) {
     abort = false;
-    computeBest(seed);
+    try {
+      computeBest(seed);
+    } catch (Throwable e) {
+      e.printStackTrace();
+      logger.severe(String.format("Error: %s", e));
+    }
     monitor.setValue(0);
     return new Result(bestState.cand, bestState.maxAllowableDepth);
   }
@@ -158,7 +96,7 @@ public class AI {
   private void computeBest(Poly seed) {
     n = seed.getHeight();
     if (n != seed.getWidth()) {
-      throw new IllegalArgumentException("height and width must be same");
+      throw new IllegalArgumentException("height and width must be the same");
     }
     State initState = eval(prob, seed);
     updateAndTellBestState(initState);
@@ -200,14 +138,40 @@ public class AI {
         }
       }
     }
-    if (maxX - minX + 1 != n) {
-      throw new AssertionError();
-    } else if (maxY - minY + 1 != n) {
-      throw new AssertionError();
+    // empty
+    if (minX == INF) {
+      return;
     }
-
+    int curOffsetX = INF, curOffsetY = INF;
+    loop:
     for (int i = 0; i < n; i++) {
       for (int j = 0; j < n; j++) {
+        if (cur.cand.get(i, j)) {
+          curOffsetX = i;
+          break loop;
+        }
+      }
+    }
+    loop:
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        if (cur.cand.get(j, i)) {
+          curOffsetY = i;
+          break loop;
+        }
+      }
+    }
+    minX -= curOffsetX;
+    minY -= curOffsetY;
+
+    for (int i = 0; i < n; i++) {
+      if (i < curOffsetX || minX + i >= covering.length) {
+        continue;
+      }
+      for (int j = 0; j < n; j++) {
+        if (j < curOffsetY || minY + j >= covering[0].length) {
+          continue;
+        }
         if (covering[minX + i][minY + j] < 0 || covering[minX + i][minY + j] > 1) {
           int i2 = n - 1 - i;
           int j2 = n - 1 - j;
@@ -240,9 +204,6 @@ public class AI {
   }
 
   private boolean validCand(Poly cand) {
-    if (!cand.trim().equals(cand)) {
-      return false;
-    }
     PolyAnalyzer analyzer = PolyAnalyzer.of(cand);
     if (!opt.allowUnconnected && !analyzer.isConnected()) {
       return false;
@@ -335,7 +296,7 @@ public class AI {
       try {
         res = judge.judge();
       } catch (NoCellException e) {
-        throw new AssertionError();
+        throw new AssertionError(e);
       }
       if (res == null) {
         dep += b;
@@ -347,6 +308,76 @@ public class AI {
       return new State(cand, INF, covering);
     } else {
       return new State(cand, dep, covering);
+    }
+  }
+
+  private List<BestResultMonitor> bestResultMonitors = new ArrayList<BestResultMonitor>();
+
+  private void updateAndTellBestState(State s) {
+    bestState = s;
+    tellBestResult(new Result(s.cand, s.maxAllowableDepth));
+  }
+  private void tellBestResult(Result result) {
+    for (BestResultMonitor m : bestResultMonitors) {
+      m.update(result);
+    }
+  }
+
+  public static class Builder {
+
+    private AI ai = new AI();
+
+    private Builder(Poly problem) {
+      ai.prob = problem;
+    }
+
+    public AI build() {
+      return ai;
+    }
+
+    public Builder setOption(Option opt) {
+      ai.opt = opt;
+      return this;
+    }
+
+    public Builder setMonitor(ProgressMonitor monitor) {
+      ai.monitor = monitor;
+      return this;
+    }
+
+    public Builder addBestResultMonitor(BestResultMonitor m) {
+      ai.bestResultMonitors.add(m);
+      return this;
+    }
+  }
+
+  public static AI.Builder builder(Poly problem) {
+    return new AI.Builder(problem);
+  }
+
+  public static interface BestResultMonitor {
+
+    void update(Result result);
+  }
+
+  public static void main(String[] args) throws FileNotFoundException {
+    Judge.logger.setLevel(Level.OFF);
+
+    if (args.length == 0) {
+      args = new String[2];
+      args[0] = "problem/9/111100_000111_000001_000001.meh";
+      args[1] = "ans/hexomino/W.ans";
+    }
+
+    String probPath = args[0];
+    String initCandPath = args[1];
+    Poly prob = PolyArray.load(new Scanner(new File(probPath)));
+    Poly cand = PolyArray.load(new Scanner(new File(initCandPath)));
+    Poly res = AI.builder(prob).build().solve(cand).convertedCand;
+    if (res == null) {
+      System.out.println("Failed");
+    } else {
+      System.out.println(res);
     }
   }
 }

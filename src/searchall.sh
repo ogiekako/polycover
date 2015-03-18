@@ -32,31 +32,31 @@ fi
 
 echo $cp
 pushd src
-javac -d ../bin cui/Main.java
+javac -d ../bin cui/Judger.java
 popd
 echo "problem:"
-for a in $(find $problemDir -mindepth 1 -type f); do
+for a in $(find $problemDir -type f); do
 	if [[ ${a##*.} != "no" ]]; then
 		continue
 	fi
 	echo $a
 done
 echo "cand:"
-for b in $(find $candDir -mindepth 1 -type f); do
+for b in $(find $candDir -type f); do
 	echo $b
 done
-for a in $(find $problemDir -mindepth 1 -type f); do
+for a in $(find $problemDir -type f); do
 	if [[ ${a##*.} != "no" ]]; then
 		continue
 	fi
-	for b in $(find $candDir -mindepth 1 -type f); do
+	for b in $(find $candDir -type f); do
         if [[ ${b##*.} != "ans" ]]; then
             continue
         fi
 		declare maxD=$(($(head -n 1 $b | cut -d ' ' -f 1)/2+1))
 		declare ok=1
 		for d in $(seq 1 $maxD); do
-		    declare cmd="java -classpath bin cui.Main ${min_num_cand} ${max_num_cand} --maxdepth=$d $a $b"
+		    declare cmd="java -classpath bin cui.Judger ${min_num_cand} ${max_num_cand} --maxdepth=$d $a $b"
             echo "cmd: " $cmd >&2
             if [[ $(${cmd}) != "OK" ]]; then
 					ok=0

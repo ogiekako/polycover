@@ -26,13 +26,14 @@ public class AppFrame extends JFrame {
 
     polyPanel = new PolyPanel(cont.cand, cont);
     menuBar = new MyMenuBar();
-    JPanel panel = new JPanel();
-    panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+    JPanel progressBarPanel = new JPanel();
+    progressBarPanel.setLayout(new BoxLayout(progressBarPanel, BoxLayout.X_AXIS));
     runProgressBar = new MyProgressBar();
-    panel.add(runProgressBar);
+    progressBarPanel.add(runProgressBar);
 
     Image img = Toolkit.getDefaultToolkit().getImage(getClass().getResource("/img/stop.png"));
     JButton stop = new JButton(new ImageIcon(img));
+    stop.setFocusable(false);
     stop.addActionListener(new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
@@ -40,12 +41,13 @@ public class AppFrame extends JFrame {
       }
     });
     stop.setBorder(new EmptyBorder(1, 1, 1, 1));
-    panel.add(stop);
-    panel.setBorder(new EmptyBorder(0, 0, 0, 2));
-    panel.validate();
-    add(polyPanel);
+    progressBarPanel.add(stop);
+    progressBarPanel.setBorder(new EmptyBorder(0, 0, 0, 2));
+    progressBarPanel.validate();
+
     setJMenuBar(menuBar);
-    add(panel, BorderLayout.SOUTH);
+    add(polyPanel);
+    add(progressBarPanel, BorderLayout.SOUTH);
     cont.addProgressMonitor(runProgressBar);
 
     setVisible(true);

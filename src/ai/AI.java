@@ -3,8 +3,8 @@ package ai;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -15,8 +15,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import main.Cell;
+import main.Covering;
 import main.Judge;
-import main.NoCellException;
 import main.Poly;
 import main.PolyAnalyzer;
 import main.PolyArray;
@@ -29,47 +29,13 @@ public class AI {
 
   private static final Logger logger = Logger.getLogger(AI.class.getName());
 
-  public static final int INF = (int) 1e9;
   private ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
-  private Option opt = new Option();
+  private AIOption opt = new AIOption();
 
   public boolean abort = false;
 
   public void abort() {
     abort = true;
-  }
-
-  public static class Result {
-
-    public final Poly convertedCand;
-    public final int maxAllowableDepth;
-
-    public Result(Poly convertedCand, int maxAllowableDepth) {
-      this.convertedCand = convertedCand;
-      this.maxAllowableDepth = maxAllowableDepth;
-    }
-  }
-
-  public static class Option {
-
-    public int maxIter = 100;
-    public boolean rotSym = true;
-    public boolean revRotSym = false;
-    public boolean allowHole = true;
-    public boolean allowUnconnected = false;
-    public int queueSize = 5;
-
-    @Override
-    public String toString() {
-      return "Option{" +
-             "allowHole=" + allowHole +
-             ", maxIter=" + maxIter +
-             ", rotSym=" + rotSym +
-             ", revRotSym=" + revRotSym +
-             ", allowUnconnected=" + allowUnconnected +
-             ", queueSize=" + queueSize +
-             '}';
-    }
   }
 
   private AI() {
@@ -90,7 +56,7 @@ public class AI {
       logger.severe(String.format("Error: %s", e));
     }
     monitor.setValue(0);
-    return new Result(bestState.cand, bestState.maxAllowableDepth);
+    return new Result(bestState.cand, bestState.objective);
   }
 
   private void computeBest(Poly seed) {
@@ -113,10 +79,10 @@ public class AI {
       monitor.setValue((int) Math.round(numIter * 100.0 / opt.maxIter));
       logger.info("numIter: " + numIter);
       logger.info("state size: " + stateQueue.size());
-      if (cur.maxAllowableDepth > bestState.maxAllowableDepth) {
+      if (cur.objective > bestState.objective) {
         updateAndTellBestState(cur);
       }
-      if (cur.maxAllowableDepth == INF) {
+      if (cur.objective == Evaluator.INF) {
         return;
       }
       addNexts(cur);
@@ -124,13 +90,30 @@ public class AI {
   }
 
   private void addNexts(State cur) {
-    int[][] covering = cur.covering;
+    List<Poly> possibleNextCands = getPossibleNextCands(cur);
+    if (possibleNextCands == null) {
+      return;
+    }
+    for (Poly nxtCand : possibleNextCands) {
+      if (validCand(nxtCand)) {
+        State state = eval(prob, nxtCand);
+        push(state);
+        if (state.objective == Evaluator.INF) {
+          return;
+        }
+      }
+    }
+  }
+
+  private List<Poly> getPossibleNextCands(State cur) {
+    Covering covering = cur.covering;
+    int INF = 10000;
     int minX = INF, minY = INF, maxX = 0, maxY = 0;
-    int h = covering.length;
-    int w = covering[0].length;
+    int h = covering.height();
+    int w = covering.width();
     for (int i = 0; i < h; i++) {
       for (int j = 0; j < w; j++) {
-        if (Math.abs(covering[i][j]) == 1) {
+        if (Math.abs(covering.get(i,j)) == 1) {
           minX = Math.min(minX, i);
           minY = Math.min(minY, j);
           maxX = Math.max(maxX, i);
@@ -140,7 +123,7 @@ public class AI {
     }
     // empty
     if (minX == INF) {
-      return;
+      return Collections.emptyList();
     }
     int curOffsetX = INF, curOffsetY = INF;
     loop:
@@ -164,15 +147,16 @@ public class AI {
     minX -= curOffsetX;
     minY -= curOffsetY;
 
+    List<Poly> possibleNextCands = new ArrayList<Poly>();
     for (int i = 0; i < n; i++) {
-      if (i < curOffsetX || minX + i >= covering.length) {
+      if (i < curOffsetX || minX + i >= covering.height()) {
         continue;
       }
       for (int j = 0; j < n; j++) {
-        if (j < curOffsetY || minY + j >= covering[0].length) {
+        if (j < curOffsetY || minY + j >= covering.width()) {
           continue;
         }
-        if (covering[minX + i][minY + j] < 0 || covering[minX + i][minY + j] > 1) {
+        if (covering.get(minX + i, minY + j) < 0 || covering.get(minX + i, minY + j) > 1) {
           int i2 = n - 1 - i;
           int j2 = n - 1 - j;
           TreeSet<Cell> cs = new TreeSet<Cell>();
@@ -191,16 +175,11 @@ public class AI {
           }
           flip(nxtCand, cs);
 
-          if (validCand(nxtCand)) {
-            State state = eval(prob, nxtCand);
-            push(state);
-            if (state.maxAllowableDepth == INF) {
-              return;
-            }
-          }
+          possibleNextCands.add(nxtCand);
         }
       }
     }
+    return possibleNextCands;
   }
 
   private boolean validCand(Poly cand) {
@@ -234,88 +213,16 @@ public class AI {
 
   Random rnd = new Random(1102840128L);
 
-  class State implements Comparable<State> {
-
-    Poly cand;
-    // INF if infinity (cand can be a solution).
-    int maxAllowableDepth;
-    int[][] covering;
-    int hash;
-    long id;
-
-    public State(Poly cand, int maxAllowableDepth, int[][] covering) {
-      this.cand = cand;
-      this.maxAllowableDepth = maxAllowableDepth;
-      this.covering = covering;
-      this.id = rnd.nextLong();
-    }
-
-    @Override
-    public int hashCode() {
-      if (hash != 0) {
-        return hash;
-      }
-      return hash = cand.hashCode();
-    }
-
-    @Override
-    public int compareTo(State o) {
-      if (maxAllowableDepth != o.maxAllowableDepth) {
-        // deeper is better.
-        return -(maxAllowableDepth - o.maxAllowableDepth);
-      } else {
-        // tie is broken randomly
-        return Long.compare(id, o.id);
-      }
-    }
-
-    @Override
-    public String toString() {
-      return "State{" +
-             "cand=" + cand +
-             ", maxAllowableDepth=" + maxAllowableDepth +
-             ", covering=" + Arrays.toString(covering) +
-             ", hash=" + hash +
-             ", id=" + id +
-             '}';
-    }
-  }
-
   private State eval(Poly prob, Poly cand) {
-    int n = Math.max(cand.getHeight(), cand.getWidth()) / 2 + 1;
-    int dep = 0;
-    int[][] covering = null;
-    for (int b = Integer.highestOneBit(n); b > 0; b >>= 1) {
-      int nd = dep + b;
-      Judge judge = Judge.newBuilder(prob, cand)
-          .setMinNumCands(2)
-          .setMaxNumCands(2)
-          .setEnabledCandDepth(nd)
-          .build();
-      int[][] res;
-      try {
-        res = judge.judge();
-      } catch (NoCellException e) {
-        throw new AssertionError(e);
-      }
-      if (res == null) {
-        dep += b;
-      } else {
-        covering = res;
-      }
-    }
-    if (dep >= n) {
-      return new State(cand, INF, covering);
-    } else {
-      return new State(cand, dep, covering);
-    }
+    Evaluator.Result res = opt.objective.eval(prob, cand);
+    return new State(cand, res.objective, res.covering);
   }
 
   private List<BestResultMonitor> bestResultMonitors = new ArrayList<BestResultMonitor>();
 
   private void updateAndTellBestState(State s) {
     bestState = s;
-    tellBestResult(new Result(s.cand, s.maxAllowableDepth));
+    tellBestResult(new Result(s.cand, s.objective));
   }
   private void tellBestResult(Result result) {
     for (BestResultMonitor m : bestResultMonitors) {
@@ -335,7 +242,7 @@ public class AI {
       return ai;
     }
 
-    public Builder setOption(Option opt) {
+    public Builder setOption(AIOption opt) {
       ai.opt = opt;
       return this;
     }
@@ -353,11 +260,6 @@ public class AI {
 
   public static AI.Builder builder(Poly problem) {
     return new AI.Builder(problem);
-  }
-
-  public static interface BestResultMonitor {
-
-    void update(Result result);
   }
 
   public static void main(String[] args) throws FileNotFoundException {

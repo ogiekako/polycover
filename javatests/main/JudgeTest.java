@@ -3,6 +3,10 @@ package main;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
+
 import util.Debug;
 
 public class JudgeTest {
@@ -32,7 +36,7 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).build().judge();
+    Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
 
     Assert.assertNull(res);
   }
@@ -52,7 +56,7 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).build().judge();
+    Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertNotNull(res);
   }
 
@@ -71,10 +75,10 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][]
+    Covering
         res =
         Judge.newBuilder(problem, candidate).setMaxNumCands(2).setEnabledCandDepth(1).build()
-            .judge();
+            .judge().covering;
     Assert.assertTrue(res == null);
   }
 
@@ -93,10 +97,10 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][]
+    Covering
         res =
         Judge.newBuilder(problem, candidate).setMaxNumCands(2).setEnabledCandDepth(2).build()
-            .judge();
+            .judge().covering;
     Assert.assertNotNull(res);
   }
 
@@ -115,7 +119,7 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).setMaxNumCands(1).build().judge();
+    Covering res = Judge.newBuilder(problem, candidate).setMaxNumCands(1).build().judge().covering;
     Assert.assertTrue(Debug.toString(res), res == null);
   }
 
@@ -133,7 +137,10 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(3).build().judge();
+    Covering
+        res =
+        Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(3).build()
+            .judge().covering;
     Assert.assertNull(Debug.toString(res), res);
   }
 
@@ -151,7 +158,10 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).setMinNumCands(1).setMaxNumCands(3).build().judge();
+    Covering
+        res =
+        Judge.newBuilder(problem, candidate).setMinNumCands(1).setMaxNumCands(3).build()
+            .judge().covering;
     Assert.assertNotNull(res);
   }
 
@@ -169,7 +179,10 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(4).build().judge();
+    Covering
+        res =
+        Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(4).build()
+            .judge().covering;
     Assert.assertNotNull(res);
   }
 
@@ -183,7 +196,7 @@ public class JudgeTest {
         {true}
     };
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).build().judge();
+    Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertTrue(res != null);
   }
 
@@ -197,7 +210,7 @@ public class JudgeTest {
         {true, true}
     };
     PolyArray problem = new PolyArray(acd);
-    int[][] res = Judge.newBuilder(problem, candidate).build().judge();
+    Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertTrue(res != null);
   }
 
@@ -214,8 +227,42 @@ public class JudgeTest {
         "###"
     });
     PolyArray problem = new PolyArray(acd);
-    int[][] res = new Judge(problem, candidate).judge();
+    Covering res = new Judge(problem, candidate).judge().covering;
 
     Assert.assertTrue(res != null);
+  }
+
+  @Test
+  public void testNumSolutions() throws Exception {
+    class TC {
+
+      String prob;
+      String cand;
+      long wantNumSolutions;
+
+      public TC(String prob, String cand, long wantNumSolutions) {
+        this.cand = cand;
+        this.prob = prob;
+        this.wantNumSolutions = wantNumSolutions;
+      }
+    }
+
+    List<TC> tcs = Arrays.asList(
+        new TC("1 1\n#", "1 1\n#", 1),
+        new TC("1 2\n##", "1 1\n#", 1),
+        new TC("1 3\n###", "1 1\n#", 1),
+        new TC("1 2\n##", "1 2\n##", 1 + 3 * 3),
+        new TC("1 3\n###", "1 2\n##", 1 * 3 + 3 * 1 + 3 * 2 * 3)
+    );
+    for (TC tc : tcs) {
+      PolyArray prob = PolyArray.load(new Scanner(tc.prob));
+      PolyArray cand = PolyArray.load(new Scanner(tc.cand));
+      Debug.debug("prob:", prob);
+      Debug.debug("cand", cand);
+      Judge.Result result = Judge.newBuilder(prob, cand)
+          .setAlsoNumSolutions()
+          .build().judge();
+      Assert.assertEquals(tc.wantNumSolutions, result.numWayOfCovering);
+    }
   }
 }

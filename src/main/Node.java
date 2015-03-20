@@ -53,7 +53,11 @@ class Node {
   }
 
   public String toString() {
-    return "State [candMoveVec=" + candMoveVec + ", possiblePairs.size()=" + possiblePairs.size()
-           + ", candId=" + candId + ", mask=" + mask + "]";
+    return "State [candMoveVec=" + candMoveVec +
+           ", possiblePairs.size()=" + possiblePairs.size() +
+           ", candId=" + candId +
+           ", mask=" + mask +
+           ", hopeless=" + hopeless +
+           "]";
   }
 }

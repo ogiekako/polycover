@@ -24,7 +24,7 @@ public class WAFrame extends JDialog implements View {
     this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
     this.setVisible(false);
     this.setSize(400, 400);
-    WAPanel panel = new WAPanel(this.cont.wa);
+    WAPanel panel = new WAPanel(cont.wa);
     this.add(panel);
     this.setFocusableWindowState(false);
     this.setResizable(true);

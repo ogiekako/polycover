@@ -26,5 +26,3 @@ for f in ${allno}; do
         mv $f "${f%.no}.meh"
     fi
 done
-#yesjavac -d bin -sourcepath src src/util/MehDecider
-#java -cp bin util.MehDecider

@@ -26,14 +26,14 @@ public class AITest {
                                            + "##.##.\n"
                                            + "#...#.\n"
                                            + "#####."));
-    AI.Option opt = new AI.Option();
+    AIOption opt = new AIOption();
     opt.rotSym = false;
     opt.allowHole = false;
-    AI.Result result = AI.builder(problem).setOption(opt).build().solve(seed);
-    Assert.assertEquals(AI.INF, result.maxAllowableDepth);
+    Result result = AI.builder(problem).setOption(opt).build().solve(seed);
+    Assert.assertEquals(Evaluator.INF, result.objective);
     Debug.debug(result.convertedCand);
     Assert.assertTrue(Judge.newBuilder(problem, result.convertedCand)
                           .setMinNumCands(2)
-                          .setMaxNumCands(2).build().judge() == null);
+                          .setMaxNumCands(2).build().judge().covering == null);
   }
 }

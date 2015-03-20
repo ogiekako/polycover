@@ -18,9 +18,11 @@ import util.Debug;
 public class Judge {
 
   public static Logger logger = Logger.getLogger(Judge.class.getName());
+
   static {
     logger.setLevel(Level.OFF);
   }
+
   // the problem, or the polyomino to be covered.
   Poly problem;
   // the candidate, or the polyomino whose multiple copies are used to cover the target.
@@ -41,6 +43,7 @@ public class Judge {
     int allowedCandDepth = INF;
     ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
     Stopwatch latencyMetric = Stopwatch.DO_NOTHING;
+    boolean alsoNumSolutions = false;
 
     @Override
     public String toString() {
@@ -48,6 +51,7 @@ public class Judge {
              "minNumCands=" + minNumCands +
              ", maxNumCands=" + maxNumCands +
              ", allowedCandDepth=" + allowedCandDepth +
+             ", alsoNumSolutions=" + alsoNumSolutions +
              '}';
     }
   }
@@ -58,6 +62,7 @@ public class Judge {
   long[] masks;
   Map<Long, List<Node>> maskToState;
   int offset;
+  long numSolutions;
 
   Judge(Poly problem, Poly candidate) {
     this.problem = problem;
@@ -101,8 +106,24 @@ public class Judge {
       return this;
     }
 
+    public Builder setAlsoNumSolutions() {
+      judge.opt.alsoNumSolutions = true;
+      return this;
+    }
+
     public Judge build() {
       return judge;
+    }
+  }
+
+  public class Result {
+
+    public final Covering covering;
+    public final long numWayOfCovering;
+
+    public Result(Covering covering, long numWayOfCovering) {
+      this.covering = covering;
+      this.numWayOfCovering = numWayOfCovering;
     }
   }
 
@@ -112,7 +133,7 @@ public class Judge {
    * の最大枚数を示す. allowedCandDepth,有効なセルのバウンディングボックスからの距離を示す.例えば,1なら,周辺のセルしかみない.
    * また,その内側にはブロックがおいてあるかのように,入れない.
    */
-  public int[][] judge() throws NoCellException {
+  public Result judge() throws NoCellException {
     logger.info(Debug.toString("Judge start with opt: ", opt));
 
     opt.latencyMetric.tick("initParams");
@@ -120,6 +141,7 @@ public class Judge {
     opt.latencyMetric.tack("initParams");
 
     List<Node> ans = solve(numEnabledCandCells);
+    logger.info("ans: " + ans);
 
     // Create result from ans.
     if (opt.monitor != null) {
@@ -127,7 +149,7 @@ public class Judge {
     }
 
     if (ans == null) {
-      return null;
+      return new Result(null, 0);
     }
     int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
     int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
@@ -166,14 +188,14 @@ public class Judge {
       }
       if (i == 1) {
         Debug.debug("res:");
-        for (int[] a:res) {
+        for (int[] a : res) {
           Debug.debug(a);
         }
         Debug.debug("cand:\n", candidate);
         throw new AssertionError();
       }
     }
-    return res;
+    return new Result(new Covering().setArray(res), numSolutions);
   }
 
   // (i,j) -> (j,w-1-i)
@@ -245,22 +267,33 @@ public class Judge {
     computeMaskToState();
 
     long all = (1L << numCellsInProblem) - 1;
+    List<Node> res = null;
     // with 1 cand
+    int num1 = 0;
     if (opt.minNumCands <= 1 && 1 <= opt.maxNumCands) {
       if (maskToState.containsKey(all)) {
-        return Collections.singletonList(maskToState.get(all).get(0));
+        num1++;
+        res = Collections.singletonList(maskToState.get(all).get(0));
+        if (!opt.alsoNumSolutions) {
+          return res;
+        }
       }
     }
+    logger.info("#ways with 1 = " + num1);
+    numSolutions += num1;
 
     // With 2 cands
     opt.latencyMetric.tick("with2cands");
     List<Node> resIn2 = with2cands(forbiddenMoves);
     opt.latencyMetric.tack("with2cands");
-    if (resIn2 != null) {
+    if (!opt.alsoNumSolutions && resIn2 != null) {
       return resIn2;
     }
+    if (res == null) {
+      res = resIn2;
+    }
     if (opt.maxNumCands <= 2) {
-      return null;
+      return res;
     }
     opt.latencyMetric.tick("generateGraph");
     generateGraph(forbiddenMoves);
@@ -269,14 +302,16 @@ public class Judge {
     cleanUpStates();
     opt.latencyMetric.tack("cleanUpStates1");
     opt.latencyMetric.tick("computeUseless");
-    for (Node s : nodes) {
-      for (Node t : nodes) {
-        if (s != t) {
-          if ((s.mask | t.mask) == t.mask) {
-            if (t.possiblePairs.containsAll(s.possiblePairs)) {
-              if (t.possiblePairs.size() > s.possiblePairs.size() || s.myId > t.myId) {
-                s.hopeless = true;
-                break;
+    if (!opt.alsoNumSolutions) {
+      for (Node s : nodes) {
+        for (Node t : nodes) {
+          if (s != t) {
+            if ((s.mask | t.mask) == t.mask) {
+              if (t.possiblePairs.containsAll(s.possiblePairs)) {
+                if (t.possiblePairs.size() > s.possiblePairs.size() || s.myId > t.myId) {
+                  s.hopeless = true;
+                  break;
+                }
               }
             }
           }
@@ -306,28 +341,51 @@ public class Judge {
     opt.latencyMetric.tick("solving");
     List<Node> ans = dfs(new ArrayList<Node>(), 0, 0);
     opt.latencyMetric.tack("solving");
-    return ans;
+    if (res == null) {
+      res = ans;
+    }
+    return res;
+  }
+
+  private String stringify(List<Node> nodes) {
+    StringBuilder b = new StringBuilder();
+    for (Node n : nodes) {
+      b.append(n + "\n");
+    }
+    return b.toString();
   }
 
   private List<Node> with2cands(boolean[][][][] forbiddenMoves) {
     long all = (1L << numCellsInProblem) - 1;
+    List<Node> res = null;
+    int num2 = 0;
     if (opt.minNumCands <= 2 && 2 <= opt.maxNumCands) {
       for (Node v : nodes) {
+        if ((v.mask & 1) != 1) {
+          continue;
+        }
         long rest = all ^ v.mask;
         if (!maskToState.containsKey(rest)) {
           continue;
         }
         for (Node u : maskToState.get(rest)) {
           if (canPutTogether(forbiddenMoves, u, v)) {
-            List<Node> res = new ArrayList<Node>();
-            res.add(v);
-            res.add(u);
-            return res;
+            num2++;
+            if (res == null) {
+              res = new ArrayList<Node>();
+              res.add(v);
+              res.add(u);
+            }
+            if (!opt.alsoNumSolutions) {
+              return res;
+            }
           }
         }
       }
     }
-    return null;
+    numSolutions += num2;
+    logger.info("#ways with 2 = " + num2);
+    return res;
   }
 
   private int initParams() throws NoCellException {
@@ -581,7 +639,14 @@ public class Judge {
 
   List<Node> dfs(List<Node> nodeStack, long mask, int currentNumCands) {
     if (mask == (1L << numCellsInProblem) - 1) {
-      return currentNumCands >= opt.minNumCands ? nodeStack : null;
+      boolean isSol = currentNumCands >= opt.minNumCands;
+      if (isSol) {
+        if (currentNumCands > 2) {
+          numSolutions++;
+        }
+        return nodeStack;
+      }
+      return null;
     }
     if (currentNumCands >= opt.maxNumCands) {
       return null;
@@ -594,6 +659,7 @@ public class Judge {
       numAllStates += ss.size();
     }
     int cnt = 0;
+    List<Node> res = null;
     for (long cur : masks) {
       List<Node> nxts = maskToState.get(cur);
       if (Long.highestOneBit(rest) != Long.highestOneBit(cur)) {
@@ -615,14 +681,19 @@ public class Judge {
           }
         }
         nodeStack.add(s);
-        List<Node> res = dfs(nodeStack, mask | cur, currentNumCands + 1);
-        if (res != null) {
-          return res;
+        List<Node> curRes = dfs(nodeStack, mask | cur, currentNumCands + 1);
+        if (curRes != null) {
+          if (!opt.alsoNumSolutions) {
+            return curRes;
+          }
+          if (res == null) {
+            res = new ArrayList<Node>(curRes);
+          }
         }
         nodeStack.remove(nodeStack.size() - 1);
       }
     }
-    return null;
+    return res;
   }
 
 }

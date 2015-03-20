@@ -6,7 +6,7 @@ import javax.swing.*;
 
 public class WAPanel extends JPanel {
 
-  private final WAModel wa;
+  private final CoveringModel wa;
   private static final int margin = 5;
 
   private static Color[]
@@ -23,7 +23,7 @@ public class WAPanel extends JPanel {
     }
   }
 
-  WAPanel(WAModel wa) {
+  WAPanel(CoveringModel wa) {
     this.wa = wa;
   }
 
@@ -32,8 +32,8 @@ public class WAPanel extends JPanel {
   int x1, y1;
 
   private void calcParams() {
-    ph = wa.array.length;
-    pw = wa.array[0].length;
+    ph = wa.height();
+    pw = wa.width();
 
     int H = getHeight(), W = getWidth();
     cL = Math.min((H - 2 * margin) / ph, (W - 2 * margin) / pw);
@@ -70,7 +70,7 @@ public class WAPanel extends JPanel {
   private void drawCell(Graphics g) {
     for (int i = 0; i < ph; i++) {
       for (int j = 0; j < pw; j++) {
-        int p = wa.array[i][j];
+        int p = wa.get(i,j);
         if (p > 0) {
           g.setColor(coverColor[p - 1]);
         } else if (p < 0) {

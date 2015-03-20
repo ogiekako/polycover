@@ -44,7 +44,7 @@ public class Judger {
         main.Judge.newBuilder(problem, cand)
             .setEnabledCandDepth(maxDepth)
             .setMinNumCands(minNumCand)
-            .setMaxNumCands(maxNumCand).build().judge() == null;
+            .setMaxNumCands(maxNumCand).build().judge().covering == null;
     System.out.println(ok ? "OK" : "NG");
   }
 }

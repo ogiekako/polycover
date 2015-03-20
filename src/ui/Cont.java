@@ -13,6 +13,9 @@ import java.util.logging.Logger;
 import javax.swing.*;
 
 import ai.AI;
+import ai.AIOption;
+import ai.BestResultMonitor;
+import ai.Result;
 import main.Cell;
 import main.Judge;
 import main.NoCellException;
@@ -20,6 +23,7 @@ import main.Poly;
 import main.PolyAnalyzer;
 import main.PolyArray;
 import main.ProgressMonitor;
+import main.Covering;
 import ui.view.View;
 
 public class Cont implements AbstCont, ProgressMonitor {
@@ -28,7 +32,7 @@ public class Cont implements AbstCont, ProgressMonitor {
 
   public final Model cand;
   public final Model problem;
-  final WAModel wa;
+  public CoveringModel wa;
   boolean rotSym = false;
   boolean revRotSym = false;
   boolean realTime = false;
@@ -37,8 +41,8 @@ public class Cont implements AbstCont, ProgressMonitor {
   public int minNumCand = 1;
   public int validCellDepth = Integer.MAX_VALUE;
   //// AI ////
-  public AI.Option aiOption = new AI.Option();
-  public int maxAllowedDepth;
+  public AIOption aiOption = new AIOption();
+  public long objective;
   SwingWorker<Integer, Integer> currentWorker = null;
 
   private boolean running;
@@ -46,7 +50,7 @@ public class Cont implements AbstCont, ProgressMonitor {
   public Cont() {
     cand = new Model(null);
     problem = new Model(new PolyArray(new boolean[20][20]));
-    wa = new WAModel();
+    wa = new CoveringModel();
   }
 
   public void setCand(Poly cand) {
@@ -241,28 +245,28 @@ public class Cont implements AbstCont, ProgressMonitor {
   }
 
   private void judgeInBackground(JFrame parent) {
-    int[][] res;
+    Covering res;
     try {
       res = Judge.newBuilder(problem.poly, cand.poly)
           .setMinNumCands(minNumCand)
           .setMaxNumCands(maxNumCand)
           .setEnabledCandDepth(validCellDepth)
-          .setMonitor(this).build().judge();
+          .setMonitor(this).build().judge().covering;
     } catch (NoCellException ex) {
       JOptionPane.showMessageDialog(parent, "board is empty.");
       return;
     }
+    wa.setCovering(res);
     if (res == null) {
       PolyAnalyzer analyzer = PolyAnalyzer.of(cand.poly);
       if (!analyzer.isConnected()) {
-        JOptionPane.showMessageDialog(parent, "OK. but not connected.");
+        JOptionPane.showMessageDialog(parent, "OK, but not connected.");
       } else if (!analyzer.hasNoHole()) {
-        JOptionPane.showMessageDialog(parent, "OK. but contains hole(s).");
+        JOptionPane.showMessageDialog(parent, "OK, but contains hole(s).");
       } else {
         JOptionPane.showMessageDialog(parent, "OK.");
       }
     } else {
-      wa.setArray(res);
       updateView();
     }
   }
@@ -310,13 +314,13 @@ public class Cont implements AbstCont, ProgressMonitor {
   }
 
   //// AI ////
-  public void setAiOption(AI.Option opt) {
+  public void setAiOption(AIOption opt) {
     this.aiOption = opt;
   }
 
   AI ai;
   public static interface AICallback {
-    void done(boolean aborted, AI.Result best);
+    void done(boolean aborted, Result best);
   }
 
   public void ai(final AICallback callback) {
@@ -328,15 +332,15 @@ public class Cont implements AbstCont, ProgressMonitor {
             .setOption(aiOption)
             .setMonitor(Cont.this)
             .addBestResultMonitor(
-                new AI.BestResultMonitor() {
+                new BestResultMonitor() {
                   @Override
-                  public void update(AI.Result result) {
+                  public void update(Result result) {
                     Cont.this.setCand(result.convertedCand);
                   }
                 }).build();
-        AI.Result best = ai.solve(cand.clone());
+        Result best = ai.solve(cand.clone());
         cand.setPoly(best.convertedCand);
-        maxAllowedDepth = best.maxAllowableDepth;
+        objective = best.objective;
         updateView();
         callback.done(ai.abort, best);
         return 0;

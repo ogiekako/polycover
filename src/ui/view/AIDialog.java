@@ -7,7 +7,9 @@ import java.util.Scanner;
 
 import javax.swing.*;
 
-import ai.AI;
+import ai.AIOption;
+import ai.Evaluator;
+import ai.Result;
 import main.PolyArray;
 import ui.Cont;
 import ui.DialogShower;
@@ -23,8 +25,9 @@ public class AIDialog extends JDialog {
   private final JCheckBox revRotSym;
   private final JCheckBox allowUnconnected;
   private final JCheckBox allowHole;
+  private final javax.swing.JComboBox<Evaluator> objective;
   JPanel panel;
-  AI.Option aiOption = new AI.Option();
+  AIOption aiOption = new AIOption();
 
   JButton submitBtn = new JButton("submit");
 
@@ -42,6 +45,7 @@ public class AIDialog extends JDialog {
     panel.add(revRotSym = new JCheckBox("rev rot sym"));
     panel.add(allowUnconnected = new JCheckBox("allow unconnected"));
     panel.add(allowHole = new JCheckBox("allow hole(s)"));
+    panel.add(objective = new JComboBox<Evaluator>(Evaluator.values()));
     panel.add(submitBtn);
     panel.setLayout(new GridLayout(panel.getComponentCount(), 1));
     this.add(panel);
@@ -63,19 +67,24 @@ public class AIDialog extends JDialog {
     aiOption.allowUnconnected = allowUnconnected.isSelected();
     aiOption.revRotSym = revRotSym.isSelected();
     aiOption.rotSym = rotSym.isSelected();
+    aiOption.objective = (Evaluator) objective.getSelectedItem();
     cont.setAiOption(aiOption);
     cont.ai(new Cont.AICallback() {
 
       @Override
-      public void done(boolean aborted, AI.Result best) {
+      public void done(boolean aborted, Result best) {
         Debug.debug(aborted, "A");
         String msg;
-        if (best.maxAllowableDepth == AI.INF) {
+        if (best.objective == Evaluator.INF) {
           Debug.debug(aborted, "B");
           msg = "maybe a solution.";
         } else {
           Debug.debug(aborted, "C");
-          msg = String.format("depth = %d.", best.maxAllowableDepth);
+          msg =
+              String.format("%s = %d.",
+                            aiOption.objective,
+                            aiOption.objective.negative() ? Evaluator.INF - best.objective
+                                                          : best.objective);
         }
 
         Debug.debug(aborted, msg);
@@ -122,7 +131,7 @@ public class AIDialog extends JDialog {
       public void update() {
         Debug.debug(cont.aiOption);
         Debug.debug(cont.cand);
-        Debug.debug(cont.maxAllowedDepth);
+        Debug.debug(cont.objective);
       }
     });
     AIDialog dialog = new AIDialog(cont, null);

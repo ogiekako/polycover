@@ -21,8 +21,8 @@ public class JudgeTestLong {
     Scanner ansIn = new Scanner(new File(ansPath));
     PolyArray prob = PolyArray.load(probIn);
     PolyArray ans = PolyArray.load(ansIn);
-    int[][] result =
-        Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
+    Covering result =
+        Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
     Assert.assertNull(Debug.toString(result), result);
 
     System.err.println(latencyMetric.summary());
@@ -43,8 +43,8 @@ public class JudgeTestLong {
         Scanner ansIn = new Scanner(new File(ansPath));
         PolyArray prob = PolyArray.load(probIn);
         PolyArray ans = PolyArray.load(ansIn);
-        int[][] result =
-            Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
+        Covering result =
+            Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
         Assert.assertNull(Debug.toString(result), result);
         System.err.println(latencyMetric.summary());
       }
@@ -66,8 +66,8 @@ public class JudgeTestLong {
           Scanner ansIn = new Scanner(new File(ansPath));
           PolyArray prob = PolyArray.load(probIn);
           PolyArray ans = PolyArray.load(ansIn);
-          int[][] result =
-              Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge();
+          Covering result =
+              Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
           Assert.assertNotNull(result);
 
           System.err.println(latencyMetric.summary());

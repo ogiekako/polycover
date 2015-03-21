@@ -29,8 +29,6 @@ public class AITest {
     AIOption opt = new AIOption();
     opt.rotSym = false;
     opt.revRotSym = false;
-    opt.allowUnconnected = false;
-    opt.allowHole = false;
     opt.objective = Evaluator.DepthIn2;
     Result result = AI.builder(problem).setOption(opt).build().solve(seed);
     Assert.assertEquals(Evaluator.INF, result.objective);

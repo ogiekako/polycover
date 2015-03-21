@@ -17,7 +17,6 @@ import main.Cell;
 import main.Covering;
 import main.Judge;
 import main.Poly;
-import main.PolyAnalyzer;
 import main.PolyArray;
 import main.ProgressMonitor;
 
@@ -101,12 +100,10 @@ public class AI {
       return;
     }
     for (Poly nxtCand : possibleNextCands) {
-      if (validCand(nxtCand)) {
-        State state = eval(prob, nxtCand);
-        push(state);
-        if (state.objective == Evaluator.INF) {
-          return;
-        }
+      State state = eval(prob, nxtCand);
+      push(state);
+      if (state.objective == Evaluator.INF) {
+        return;
       }
     }
   }
@@ -119,7 +116,7 @@ public class AI {
     int w = covering.width();
     for (int i = 0; i < h; i++) {
       for (int j = 0; j < w; j++) {
-        if (Math.abs(covering.get(i,j)) == 1) {
+        if (Math.abs(covering.get(i, j)) == 1) {
           minX = Math.min(minX, i);
           minY = Math.min(minY, j);
           maxX = Math.max(maxX, i);
@@ -167,8 +164,12 @@ public class AI {
           int i2 = n - 1 - i;
           int j2 = n - 1 - j;
           TreeSet<Cell> cs = new TreeSet<Cell>();
+          Cell c = new Cell(i, j);
+          if (!opt.validator.valid(cur.cand, c)) {
+            continue;
+          }
           Poly nxtCand = cur.cand.clone();
-          cs.add(new Cell(i, j));
+          cs.add(c);
           if (opt.rotSym || opt.revRotSym) {
             cs.add(new Cell(j, i2));
             cs.add(new Cell(i2, j2));
@@ -187,17 +188,6 @@ public class AI {
       }
     }
     return possibleNextCands;
-  }
-
-  private boolean validCand(Poly cand) {
-    PolyAnalyzer analyzer = PolyAnalyzer.of(cand);
-    if (!opt.allowUnconnected && !analyzer.isConnected()) {
-      return false;
-    }
-    if (!opt.allowHole && !analyzer.hasNoHole()) {
-      return false;
-    }
-    return true;
   }
 
   private void push(State state) {
@@ -229,6 +219,7 @@ public class AI {
     bestState = s;
     tellBestResult(new Result(s.cand, s.objective));
   }
+
   private void tellBestResult(Result result) {
     for (BestResultMonitor m : bestResultMonitors) {
       m.update(result);

@@ -10,6 +10,7 @@ import javax.swing.*;
 import ai.AIOption;
 import ai.Evaluator;
 import ai.Result;
+import ai.Validator;
 import main.PolyArray;
 import ui.Cont;
 import ui.DialogShower;
@@ -23,9 +24,8 @@ public class AIDialog extends JDialog {
   private final AnnotatedTextField maxIter;
   private final JCheckBox rotSym;
   private final JCheckBox revRotSym;
-  private final JCheckBox allowUnconnected;
-  private final JCheckBox allowHole;
   private final javax.swing.JComboBox<Evaluator> objective;
+  private final javax.swing.JComboBox<Validator> validator;
   JPanel panel;
   AIOption aiOption = new AIOption();
 
@@ -40,12 +40,13 @@ public class AIDialog extends JDialog {
     setResizable(true);
     setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     panel = new JPanel();
-    panel.add(maxIter = new AnnotatedTextField("#iterations", "100"));
+    panel.add(maxIter = new AnnotatedTextField(" #iterations", "100"));
     panel.add(rotSym = new JCheckBox("rot sym"));
     panel.add(revRotSym = new JCheckBox("rev rot sym"));
-    panel.add(allowUnconnected = new JCheckBox("allow unconnected"));
-    panel.add(allowHole = new JCheckBox("allow hole(s)"));
+    panel.add(new JLabel(" objective func:"));
     panel.add(objective = new JComboBox<Evaluator>(Evaluator.values()));
+    panel.add(new JLabel(" validator:"));
+    panel.add(validator = new JComboBox<Validator>(Validator.values()));
     panel.add(submitBtn);
     panel.setLayout(new GridLayout(panel.getComponentCount(), 1));
     this.add(panel);
@@ -63,11 +64,10 @@ public class AIDialog extends JDialog {
   private void submit() {
     Debug.debug("submit");
     aiOption.maxIter = Integer.parseInt(maxIter.getText());
-    aiOption.allowHole = allowHole.isSelected();
-    aiOption.allowUnconnected = allowUnconnected.isSelected();
     aiOption.revRotSym = revRotSym.isSelected();
     aiOption.rotSym = rotSym.isSelected();
     aiOption.objective = (Evaluator) objective.getSelectedItem();
+    aiOption.validator = (Validator) validator.getSelectedItem();
     cont.setAiOption(aiOption);
     cont.ai(new Cont.AICallback() {
 

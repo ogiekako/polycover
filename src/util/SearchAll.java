@@ -14,6 +14,7 @@ import ai.AI;
 import ai.AIOption;
 import ai.Evaluator;
 import ai.Result;
+import ai.Validator;
 import main.Judge;
 import main.NoCellException;
 import main.Poly;
@@ -104,11 +105,10 @@ public class SearchAll {
         Poly seed = e.cand;
         AIOption opt = new AIOption();
         opt.rotSym = true;
-        opt.allowHole = false;
-        opt.allowUnconnected = false;
         opt.queueSize = 5;
         opt.maxIter = 100;
         opt.objective = Evaluator.DepthAndNumSolutionsIn2;
+        opt.validator = Validator.AllowHoleDisallowDiagonal;
         Result result = AI.builder(prob).setOption(opt).build().solve(seed);
         File tmp;
         try {

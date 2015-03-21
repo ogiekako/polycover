@@ -33,5 +33,5 @@ Scripts
 
 + `src/no2meh.sh`: .no のファイルのなかで、実は .meh であるものを列挙し、拡張子を .meh に変える。
 
-+ `src/searchall.sh` 例えば、`src/searchall.sh --min_num_cand=2 --max_num_cand=3 problem/hexomino ans 2> /dev/null`
-とすると、cand を2枚以上、3枚以下使うという条件のもとで、problem/hexomino 以下にある拡張子が .no の問題と、ans 以下にあるすべてのポリオミノとの総当りを行い、どれだけ深く刺すのを許した時におおえてしまうかをすべてのペアに対して出力する。
++ `src/searchall.sh` 例えば、`src/searchall.sh --min_num_cand=2 --max_num_cand=3 problem/6 ans 2> /dev/null`
+とすると、cand を2枚以上、3枚以下使うという条件のもとで、problem/6 以下にある拡張子が .no の問題と、ans 以下にあるすべてのポリオミノとの総当りを行い、どれだけ深く刺すのを許した時におおえてしまうかをすべてのペアに対して出力する。

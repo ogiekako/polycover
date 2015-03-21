@@ -268,7 +268,7 @@ public class AI {
     if (args.length == 0) {
       args = new String[2];
       args[0] = "problem/9/111100_000111_000001_000001.meh";
-      args[1] = "ans/hexomino/W.ans";
+      args[1] = "ans/6/W.ans";
     }
 
     String probPath = args[0];

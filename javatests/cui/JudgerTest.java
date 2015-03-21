@@ -12,7 +12,7 @@ public class JudgerTest {
   public void testMain_OK() throws Exception {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     System.setOut(new PrintStream(out));
-    Judger.main(new String[]{"problem/pentomino/X.yes", "ans/pentomino/X.ans"});
+    Judger.main(new String[]{"problem/5/X.yes", "ans/5/X.ans"});
     Assert.assertEquals("OK\n", out.toString());
   }
 
@@ -20,7 +20,7 @@ public class JudgerTest {
   public void testMain_NG() throws Exception {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     System.setOut(new PrintStream(out));
-    Judger.main(new String[]{"problem/pentomino/I.yes", "ans/pentomino/X.ans"});
+    Judger.main(new String[]{"problem/5/I.yes", "ans/5/X.ans"});
     Assert.assertEquals("NG\n", out.toString());
   }
 }

@@ -6,6 +6,7 @@ import java.util.Scanner;
 public class PolyArray implements Poly {
 
   boolean[][] array;
+  private String filePath;
 
   public PolyArray(boolean[][] a) {
     assert a.length > 0 && a[0].length > 0;
@@ -183,5 +184,15 @@ public class PolyArray implements Poly {
   @Override
   public Poly clone() {
     return new PolyArray(array);
+  }
+
+  @Override
+  public String filePath() {
+    return filePath;
+  }
+
+  @Override
+  public void setFilePath(String filePath) {
+    this.filePath = filePath;
   }
 }

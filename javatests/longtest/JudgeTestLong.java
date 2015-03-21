@@ -20,8 +20,8 @@ public class JudgeTestLong {
   @Test
   public void testT() throws Exception {
     Stopwatch latencyMetric = new Stopwatch();
-    String probPath = "problem/hexomino/T.yes";
-    String ansPath = "ans/hexomino/T.ans";
+    String probPath = "problem/6/T.yes";
+    String ansPath = "ans/6/T.ans";
     Scanner probIn = new Scanner(new File(probPath));
     Scanner ansIn = new Scanner(new File(ansPath));
     PolyArray prob = PolyArray.load(probIn);

@@ -54,4 +54,14 @@ public class Model implements Poly {
   public boolean isNull() {
     return poly == null;
   }
+
+  @Override
+  public String filePath() {
+    return null;
+  }
+
+  @Override
+  public void setFilePath(String filePath) {
+    // Do nothing.
+  }
 }

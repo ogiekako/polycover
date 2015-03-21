@@ -118,6 +118,7 @@ public class Judge {
 
   public class Result {
 
+    // covering == null if there is no solution.
     public final Covering covering;
     public final long numWayOfCovering;
 
@@ -245,24 +246,23 @@ public class Judge {
 
     opt.latencyMetric.tick("computeForbiddenMoves");
     boolean[][][][] forbiddenMoves =
-        new boolean[candidates.size()][candidates.size()][offset * 2][offset
-                                                                      * 2]; // cand[i] cannot be moved by these dirs not to overlap with cand[j].
-    int numForbiddenMoves = 0;
+        new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
+        // cand[i] cannot be moved by these dirs not to overlap with cand[j].
+//    int numForbiddenMoves = 0;
     for (int i = 0; i < candidates.size(); i++) {
       for (int j = 0; j < candidates.size(); j++) {
         for (Cell c : enabledCellsForCand[i]) {
           for (Cell d : enabledCellsForCand[j]) {
-            Cell dir = d.sub(c);
-            if (!forbiddenMoves[i][j][dir.x + offset][dir.y + offset]) {
-              forbiddenMoves[i][j][dir.x + offset][dir.y + offset] = true;
-              numForbiddenMoves++;
-            }
+            int dx = d.x - c.x;
+            int dy = d.y - c.y;
+              forbiddenMoves[i][j][dx + offset][dy + offset] = true;
+
           }
         }
       }
     }
     opt.latencyMetric.tack("computeForbiddenMoves");
-    logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
+//    logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
 
     computeMaskToState();
 
@@ -484,8 +484,9 @@ public class Judge {
   private void generateGraph(boolean[][][][] forbiddenMoves) {
     int numAllCombination = nodes.size() * maskToState.size();
     int progress = 0;
+    long[] masks = new long[nodes.size()];
     for (Node v : nodes) {
-      long mask = v.mask;
+      masks[v.myId] |= v.mask;
       for (Map.Entry<Long, List<Node>> e : maskToState.entrySet()) {
         progress++;
         opt.monitor.setValue(10 + progress * 40 / numAllCombination);
@@ -500,16 +501,21 @@ public class Judge {
           if (u.hopeless) {
             continue;
           }
+          if (u.myId < v.myId) {
+            continue;
+          }
           boolean canPutTogether = canPutTogether(forbiddenMoves, v, u);
           if (!canPutTogether) {
             continue;
           }
-          mask |= e.getKey();
+          masks[v.myId] |= e.getKey();
+          masks[u.myId] |= v.mask;
           v.possiblePairs.add(u);
+          u.possiblePairs.add(v);
         }
         opt.latencyMetric.tack("genGraphInner");
       }
-      if (mask != (1L << numCellsInProblem) - 1) {
+      if (masks[v.myId] != (1L << numCellsInProblem) - 1) {
         v.hopeless = true;
       }
     }
@@ -572,6 +578,7 @@ public class Judge {
     int numAllWaysToPut = numCandPattern * numEnabledCandCells * numCellInProblem;
     // Iterate over all such patterns.
     for (int i = 0, progress = 0; i < numCandPattern; i++) {
+      Set<Cell> cells = new HashSet<Cell>(Arrays.asList(enabledCellsForCand[i]));
       for (int j = 0; j < numEnabledCandCells; j++) {
         for (int k = 0; k < numCellInProblem; k++) {
           progress++;
@@ -585,7 +592,7 @@ public class Judge {
           Node node = new Node(i, candMoveVec);
           for (int l = 0; l < numCellInProblem; l++) {
             Cell orig = cellsInProblem[l].sub(candMoveVec);
-            if (Arrays.asList(enabledCellsForCand[i]).contains(orig)) {
+            if (cells.contains(orig)) {
               node.mask |= 1L << l;
             }
           }

@@ -32,4 +32,8 @@ public interface Poly {
   Poly trim();
 
   Poly clone();
+
+  String filePath();
+
+  void setFilePath(String filePath);
 }

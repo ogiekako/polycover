@@ -2,6 +2,7 @@ package util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -64,5 +65,18 @@ public class FileUtil {
       res.addAll(allFilesUnder(dir));
     }
     return res;
+  }
+
+  public static void savePoly(Poly poly, File file) throws FileNotFoundException {
+    PrintWriter pw = new PrintWriter(file);
+    pw.println(poly.getHeight() + " " + poly.getWidth());
+    for (int i = 0; i < poly.getHeight(); i++) {
+      String s = "";
+      for (int j = 0; j < poly.getWidth(); j++) {
+        s += poly.get(i, j) ? "#" : ".";
+      }
+      pw.println(s);
+    }
+    pw.flush();
   }
 }

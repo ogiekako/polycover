@@ -27,7 +27,7 @@ import main.ProgressMonitor;
  */
 public class AI {
 
-  private static final Logger logger = Logger.getLogger(AI.class.getName());
+  public static final Logger logger = Logger.getLogger(AI.class.getName());
 
   private ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
   private AIOption opt = new AIOption();

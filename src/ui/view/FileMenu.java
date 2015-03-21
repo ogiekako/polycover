@@ -12,6 +12,7 @@ import main.PolyArray;
 import main.Prop;
 import ui.Cont;
 import ui.DialogShower;
+import util.FileUtil;
 
 class FileMenu extends JMenu {
 
@@ -82,14 +83,12 @@ class FileMenu extends JMenu {
           return ;
         }
         try {
-          cont.saveCand(file);
+          FileUtil.savePoly(cont.cand, file);
         } catch (IOException e1) {
           DialogShower.message(FileMenu.this, e1.getMessage());
         }
       }
     });
-//    JMenuItem saveProb = new JMenuItem("save problem");
-//    JMenuItem saveCand = new JMenuItem("save candidate");
   }
 
   private void addMenuItem(String name, ActionListener listener) {

@@ -17,13 +17,13 @@ import ai.AIOption;
 import ai.BestResultMonitor;
 import ai.Result;
 import main.Cell;
+import main.Covering;
 import main.Judge;
 import main.NoCellException;
 import main.Poly;
 import main.PolyAnalyzer;
 import main.PolyArray;
 import main.ProgressMonitor;
-import main.Covering;
 import ui.view.View;
 
 public class Cont implements AbstCont, ProgressMonitor {
@@ -147,19 +147,6 @@ public class Cont implements AbstCont, ProgressMonitor {
     }
 
     pw.println("cover:");
-    pw.println(cand.getHeight() + " " + cand.getWidth());
-    for (int i = 0; i < cand.getHeight(); i++) {
-      String s = "";
-      for (int j = 0; j < cand.getWidth(); j++) {
-        s += cand.get(i, j) ? "#" : ".";
-      }
-      pw.println(s);
-    }
-    pw.flush();
-  }
-
-  public void saveCand(File file) throws IOException {
-    PrintWriter pw = new PrintWriter(file);
     pw.println(cand.getHeight() + " " + cand.getWidth());
     for (int i = 0; i < cand.getHeight(); i++) {
       String s = "";

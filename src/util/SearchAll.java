@@ -2,11 +2,18 @@ package util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.logging.Level;
 
+import ai.AI;
+import ai.AIOption;
+import ai.Evaluator;
+import ai.Result;
 import main.Judge;
 import main.NoCellException;
 import main.Poly;
@@ -20,13 +27,13 @@ public class SearchAll {
 
   class E implements Comparable<E> {
 
-    String probPath;
-    String candPath;
+    Poly prob;
+    Poly cand;
     int depth;
 
-    public E(String probPath, String candPath, int depth) {
-      this.probPath = probPath;
-      this.candPath = candPath;
+    public E(Poly prob, Poly cand, int depth) {
+      this.prob = prob;
+      this.cand = cand;
       this.depth = depth;
     }
 
@@ -38,14 +45,15 @@ public class SearchAll {
   }
 
   private void run() throws FileNotFoundException, NoCellException {
-    List<Poly> probs = FileUtil.allPolysUnder(new File("problem"), ".no");
+    List<Poly> probs = FileUtil.allPolysUnder(new File("problem/7"), ".no");
     List<Poly> cands = FileUtil.allPolysUnder(new File("ans"), ".ans");
     List<E> res = new ArrayList<E>();
     ProgressMonitor monitor = new ProgressMonitor() {
-      int prog=0;
+      int prog = 0;
+
       @Override
       public void setValue(int n) {
-        while(prog < n) {
+        while (prog < n) {
           prog++;
           System.err.print(".");
         }
@@ -72,20 +80,46 @@ public class SearchAll {
         if (ok) {
           d = 1000;
         }
-        res.add(new E(prob.filePath(), cand.filePath(), d));
+        res.add(new E(prob, cand, d));
       }
     }
+    System.err.println("");
     Collections.sort(res);
     HashMap<String, Integer> seen = new HashMap<String, Integer>();
+    HashSet<String> solved = new HashSet<String>();
+    AI.logger.setLevel(Level.OFF);
     for (E e : res) {
-      if (!seen.containsKey(e.probPath)) {
-        seen.put(e.probPath, 0);
+      if (!seen.containsKey(e.prob.filePath())) {
+        seen.put(e.prob.filePath(), 0);
       }
-      if (seen.get(e.probPath) >= 2) {
+      if (seen.get(e.prob.filePath()) >= 2) {
         continue;
       }
-      seen.put(e.probPath, seen.get(e.probPath) + 1);
-      System.out.println(e.probPath + " " + e.candPath + " " + e.depth);
+      seen.put(e.prob.filePath(), seen.get(e.prob.filePath()) + 1);
+      System.out.println(e.prob.filePath() + " " + e.cand.filePath() + " " + e.depth);
+
+      if (!solved.contains(e.prob.filePath())) {
+        System.err.println("trying AI");
+        AIOption opt = new AIOption();
+        opt.rotSym = true;
+        opt.allowHole = false;
+        opt.allowUnconnected = false;
+        opt.queueSize = 5;
+        opt.maxIter = 100;
+        Result result = AI.builder(e.prob).setOption(opt).build().solve(e.cand);
+        File tmp;
+        try {
+          tmp = File.createTempFile("poly", "maybe.ans");
+          FileUtil.savePoly(result.convertedCand, tmp);
+        } catch (IOException e1) {
+          System.err.println("Failed to create tmp file.");
+          continue;
+        }
+        if (result.objective == Evaluator.INF) {
+          System.out.println("Maybe solution:");
+          System.out.println(e.prob.filePath() + " " + tmp.getPath());
+        }
+      }
     }
   }
 }

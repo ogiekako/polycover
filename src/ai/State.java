@@ -7,7 +7,7 @@ import main.Poly;
 
 class State implements Comparable<State> {
 
-  private static Random rnd = new Random(141281412L);
+  private static Random rnd = new Random();
   Poly cand;
   // INF if infinity (cand can be a solution).
   long objective;
@@ -19,6 +19,9 @@ class State implements Comparable<State> {
     this.cand = cand;
     this.objective = objective;
     this.covering = covering;
+    if (objective < Evaluator.INF && covering == null) {
+      throw new AssertionError();
+    }
     this.id = rnd.nextLong();
   }
 

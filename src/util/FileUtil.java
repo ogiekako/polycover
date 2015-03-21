@@ -14,8 +14,11 @@ import main.PolyArray;
 public class FileUtil {
 
   // Return relative path.
-  public static List<String> allFilesUnder(File dir) {
-    File[] files = dir.listFiles();
+  public static List<String> allFilesUnder(File fileOrDir) {
+    if (!fileOrDir.isDirectory()) {
+      return Collections.singletonList(fileOrDir.getPath());
+    }
+    File[] files = fileOrDir.listFiles();
     if (files == null) {
       return Collections.emptyList();
     }
@@ -24,11 +27,7 @@ public class FileUtil {
       if (!file.exists()) {
         continue;
       }
-      if (file.isDirectory()) {
-        res.addAll(allFilesUnder(file));
-      } else if (file.isFile()) {
-        res.add(file.getPath());
-      }
+      res.addAll(allFilesUnder(file));
     }
     return res;
   }

@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
@@ -45,12 +44,15 @@ public class AI {
   State bestState;
   Set<Integer> seenStateHash = new HashSet<Integer>();
   TreeSet<State> stateQueue = new TreeSet<State>();
-  int n;
 
   public Result solve(Poly seed) {
+    return solve(Collections.singletonList(seed));
+  }
+
+  public Result solve(List<Poly> seeds) {
     abort = false;
     try {
-      computeBest(seed);
+      computeBest(seeds);
     } catch (Throwable e) {
       e.printStackTrace();
       logger.severe(String.format("Error: %s", e));
@@ -59,14 +61,15 @@ public class AI {
     return new Result(bestState.cand, bestState.objective);
   }
 
-  private void computeBest(Poly seed) {
-    n = seed.getHeight();
-    if (n != seed.getWidth()) {
-      throw new IllegalArgumentException("height and width must be the same");
+  private void computeBest(List<Poly> seeds) {
+    for (Poly seed : seeds) {
+      if (seed.getWidth() != seed.getHeight()) {
+        throw new IllegalArgumentException("height and width must be the same");
+      }
+      State initState = eval(prob, seed);
+      updateAndTellBestState(initState);
+      push(initState);
     }
-    State initState = eval(prob, seed);
-    updateAndTellBestState(initState);
-    push(initState);
     int numIter = 0;
     while (!stateQueue.isEmpty()) {
       if (abort) {
@@ -90,6 +93,9 @@ public class AI {
   }
 
   private void addNexts(State cur) {
+    if (cur.covering == null) {
+      throw new AssertionError();
+    }
     List<Poly> possibleNextCands = getPossibleNextCands(cur);
     if (possibleNextCands == null) {
       return;
@@ -125,6 +131,7 @@ public class AI {
     if (minX == INF) {
       return Collections.emptyList();
     }
+    int n = cur.cand.getHeight();
     int curOffsetX = INF, curOffsetY = INF;
     loop:
     for (int i = 0; i < n; i++) {
@@ -210,8 +217,6 @@ public class AI {
       cand.flip(c.x, c.y);
     }
   }
-
-  Random rnd = new Random(1102840128L);
 
   private State eval(Poly prob, Poly cand) {
     Evaluator.Result res = opt.objective.eval(prob, cand);

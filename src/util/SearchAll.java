@@ -45,7 +45,7 @@ public class SearchAll {
   }
 
   private void run() throws FileNotFoundException, NoCellException {
-    List<Poly> probs = FileUtil.allPolysUnder(new File("problem/7"), ".no");
+    List<Poly> probs = FileUtil.allPolysUnder(new File("problem"), ".no");
     List<Poly> cands = FileUtil.allPolysUnder(new File("ans"), ".ans");
     List<E> res = new ArrayList<E>();
     ProgressMonitor monitor = new ProgressMonitor() {
@@ -100,13 +100,16 @@ public class SearchAll {
 
       if (!solved.contains(e.prob.filePath())) {
         System.err.println("trying AI");
+        Poly prob = e.prob;
+        Poly seed = e.cand;
         AIOption opt = new AIOption();
         opt.rotSym = true;
         opt.allowHole = false;
         opt.allowUnconnected = false;
         opt.queueSize = 5;
         opt.maxIter = 100;
-        Result result = AI.builder(e.prob).setOption(opt).build().solve(e.cand);
+        opt.objective = Evaluator.DepthAndNumSolutionsIn2;
+        Result result = AI.builder(prob).setOption(opt).build().solve(seed);
         File tmp;
         try {
           tmp = File.createTempFile("poly", "maybe.ans");
@@ -117,7 +120,8 @@ public class SearchAll {
         }
         if (result.objective == Evaluator.INF) {
           System.out.println("Maybe solution:");
-          System.out.println(e.prob.filePath() + " " + tmp.getPath());
+          System.out.println(prob.filePath() + " " + tmp.getPath());
+          solved.add(prob.filePath());
         }
       }
     }

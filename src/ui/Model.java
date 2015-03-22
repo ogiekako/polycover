@@ -1,12 +1,18 @@
 package ui;
 
+import java.util.Deque;
+import java.util.LinkedList;
+
 import main.Poly;
 
 public class Model {
 
-  Poly poly;
+  Deque<Poly> polyHistory = new LinkedList<Poly>();
+
+  private Poly poly;
 
   public void flip(int x, int y) {
+    polyHistory.addLast(poly.clone());
     poly.flip(x, y);
   }
 
@@ -22,27 +28,15 @@ public class Model {
     return poly.getWidth();
   }
 
-  public Poly flip() {
-    return poly.rot90();
-  }
-
-  public Poly rot90() {
-    return poly.rot90();
-  }
-
-  public Poly trim() {
-    return poly.trim();
-  }
-
-  public Poly clone() {
-    return poly.clone();
-  }
-
   Model(Poly poly) {
     this.poly = poly;
   }
 
   public void setPoly(Poly poly) {
+    polyHistory.addLast(this.poly);
+    if (polyHistory.size() > 100) {
+      polyHistory.removeFirst();
+    }
     this.poly = poly;
   }
 
@@ -54,15 +48,13 @@ public class Model {
     return poly == null;
   }
 
-  public String filePath() {
-    return null;
-  }
-
-  public void setFilePath(String filePath) {
-    // Do nothing.
-  }
-
   public Poly getPoly() {
     return poly;
+  }
+
+  public void undo() {
+    if (!polyHistory.isEmpty()) {
+      this.poly = polyHistory.pollLast();
+    }
   }
 }

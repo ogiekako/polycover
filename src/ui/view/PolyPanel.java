@@ -23,8 +23,10 @@ public class PolyPanel extends JPanel implements View {
   private int selectX = 0, selectY = 0;
 
   private final Model poly;
+  private final Cont cont;
 
   PolyPanel(Model _poly, final Cont cont) {
+    this.cont = cont;
     cont.addView(this);
     poly = _poly;
     MouseAdapter mouseAdaptor = new MouseAdapter() {
@@ -64,6 +66,8 @@ public class PolyPanel extends JPanel implements View {
           selectY++;
         } else if (e.getKeyCode() == KeyEvent.VK_DOWN && selectX < poly.getHeight() - 1) {
           selectX++;
+        } else if (e.getKeyCode() == KeyEvent.VK_Z) {
+          undo();
         }
         cont.updateView();
       }
@@ -75,6 +79,10 @@ public class PolyPanel extends JPanel implements View {
     });
     setFocusable(true);
     requestFocusInWindow();
+  }
+
+  private void undo() {
+    cont.undo();
   }
 
   private Cell getCell(int mx, int my) {

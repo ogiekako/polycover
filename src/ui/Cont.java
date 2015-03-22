@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Stack;
 import java.util.logging.Logger;
 
 import javax.swing.*;
@@ -29,6 +30,8 @@ public class Cont implements AbstCont, ProgressMonitor {
 
   static Logger logger = Logger.getLogger(Cont.class.getName());
 
+  int numCandHistory = 20;
+  public Stack<Model> candHistory = new Stack<Model>();
   public final Model cand;
   public final Model problem;
   public CoveringModel wa;
@@ -48,7 +51,7 @@ public class Cont implements AbstCont, ProgressMonitor {
 
   public Cont() {
     cand = new Model(null);
-    problem = new Model(new Poly(new boolean[20][20]));
+    problem = new Model(new Poly(new boolean[8][8]));
     wa = new CoveringModel();
   }
 
@@ -209,6 +212,11 @@ public class Cont implements AbstCont, ProgressMonitor {
     return problemAndCand;
   }
 
+  public void undo() {
+    cand.undo();
+    updateView();
+  }
+
   class ProblemAndCand {
 
     Poly problem;
@@ -233,7 +241,7 @@ public class Cont implements AbstCont, ProgressMonitor {
   private void judgeInBackground(JFrame parent) {
     Covering res;
     try {
-      res = Judge.newBuilder(problem.poly, cand.poly)
+      res = Judge.newBuilder(problem.getPoly(), cand.getPoly())
           .setMinNumCands(minNumCand)
           .setMaxNumCands(maxNumCand)
           .setEnabledCandDepth(validCellDepth)
@@ -244,7 +252,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     }
     wa.setCovering(res);
     if (res == null) {
-      PolyAnalyzer analyzer = PolyAnalyzer.of(cand.poly);
+      PolyAnalyzer analyzer = PolyAnalyzer.of(cand.getPoly());
       if (!analyzer.isConnected()) {
         JOptionPane.showMessageDialog(parent, "OK, but not connected.");
       } else if (!analyzer.hasNoHole()) {
@@ -314,7 +322,7 @@ public class Cont implements AbstCont, ProgressMonitor {
 
       @Override
       protected Integer doInBackground() throws Exception {
-        ai = AI.builder(problem.clone())
+        ai = AI.builder(problem.getPoly())
             .setOption(aiOption)
             .setMonitor(Cont.this)
             .addBestResultMonitor(
@@ -324,7 +332,7 @@ public class Cont implements AbstCont, ProgressMonitor {
                     Cont.this.setCand(result.convertedCand);
                   }
                 }).build();
-        Result best = ai.solve(cand.clone());
+        Result best = ai.solve(cand.getPoly());
         cand.setPoly(best.convertedCand);
         objective = best.objective;
         updateView();

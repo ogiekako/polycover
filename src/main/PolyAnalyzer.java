@@ -115,10 +115,10 @@ public class PolyAnalyzer {
 
   public int numComponents() {
     int h = poly.getHeight(), w = poly.getWidth();
-    boolean[][] cell = new boolean[h + 2][w + 2];
+    boolean[][] cell = new boolean[h][w];
     for (int i = 0; i < h; i++) {
       for (int j = 0; j < w; j++) {
-        cell[i + 1][j + 1] = poly.get(i, j);
+        cell[i][j] = poly.get(i, j);
       }
     }
     int res = 0;
@@ -135,10 +135,10 @@ public class PolyAnalyzer {
 
   public int minCompSize() {
     int h = poly.getHeight(), w = poly.getWidth();
-    boolean[][] cell = new boolean[h + 2][w + 2];
+    boolean[][] cell = new boolean[h][w];
     for (int i = 0; i < h; i++) {
       for (int j = 0; j < w; j++) {
-        cell[i + 1][j + 1] = poly.get(i, j);
+        cell[i][j] = poly.get(i, j);
       }
     }
     int res = Integer.MAX_VALUE;

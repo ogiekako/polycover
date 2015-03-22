@@ -29,7 +29,7 @@ public class AITest {
     opt.rotSym = false;
     opt.revRotSym = false;
     opt.objective = Evaluator.DepthIn2;
-    Result result = AI.builder(problem).setOption(opt).build().solve(seed);
+    Result result = AI.builder(problem).setOption(opt).build().solve(seed.clone());
     Assert.assertEquals(Evaluator.INF, result.objective);
     Debug.debug(result.convertedCand);
     Assert.assertTrue(Judge.newBuilder(problem, result.convertedCand)
@@ -37,7 +37,7 @@ public class AITest {
                           .setMaxNumCands(2).build().judge().covering == null);
 
     opt.objective = Evaluator.DepthAndNumSolutionsIn2;
-    result = AI.builder(problem).setOption(opt).build().solve(seed);
+    result = AI.builder(problem).setOption(opt).build().solve(seed.clone());
     Assert.assertEquals(Evaluator.INF, result.objective);
     Debug.debug(result.convertedCand);
     Assert.assertTrue(Judge.newBuilder(problem, result.convertedCand)
@@ -46,7 +46,8 @@ public class AITest {
 
     opt.objective = Evaluator.DepthAndNumSolutionsIn23;
     opt.maxIter = 200;
-    result = AI.builder(problem).setOption(opt).build().solve(seed);
+    opt.validator = Validator.NoSeparate;
+    result = AI.builder(problem).setOption(opt).build().solve(seed.clone());
     Assert.assertEquals(Evaluator.INF, result.objective);
     Debug.debug(result.convertedCand);
     Assert.assertTrue(Judge.newBuilder(problem, result.convertedCand)

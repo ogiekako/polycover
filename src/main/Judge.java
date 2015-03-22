@@ -66,6 +66,7 @@ public class Judge {
   long numSolutions;
   private Poly boundingPoly;
   private Poly innerPoly;
+  private boolean[][][][] forbiddenMoves;
 
   Judge(Poly problem, Poly candidate) {
     this.problem = problem;
@@ -249,7 +250,7 @@ public class Judge {
     logger.info(Debug.toString("num states", nodes.size()));
 
     opt.latencyMetric.tick("computeForbiddenMovesPrep");
-    boolean[][][][] forbiddenMoves =
+    forbiddenMoves =
         new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
 
     Cell[][] innerPlusCands = new Cell[candidates.size()][];
@@ -309,7 +310,7 @@ public class Judge {
 
     // With 2 cands
     opt.latencyMetric.tick("with2cands");
-    List<Node> resIn2 = with2cands(forbiddenMoves);
+    List<Node> resIn2 = with2cands();
     opt.latencyMetric.tack("with2cands");
     if (!opt.alsoNumSolutions && resIn2 != null) {
       return resIn2;
@@ -321,7 +322,7 @@ public class Judge {
       return res;
     }
     opt.latencyMetric.tick("generateGraph");
-    generateGraph(forbiddenMoves);
+    generateGraph();
     opt.latencyMetric.tack("generateGraph");
     opt.latencyMetric.tick("cleanUpStates1");
     cleanUpStates();
@@ -381,7 +382,7 @@ public class Judge {
   }
 
   //  private List<Node> with2cands(Bits[][][] forbiddenMoves) {
-  private List<Node> with2cands(boolean[][][][] forbiddenMoves) {
+  private List<Node> with2cands() {
     long all = (1L << numCellsInProblem) - 1;
     List<Node> res = null;
     int num2 = 0;
@@ -395,7 +396,7 @@ public class Judge {
           continue;
         }
         for (Node u : maskToState.get(rest)) {
-          if (canPutTogether(forbiddenMoves, u, v)) {
+          if (canPutTogether(u, v)) {
             num2++;
             if (res == null) {
               res = new ArrayList<Node>();
@@ -412,6 +413,10 @@ public class Judge {
     numSolutions += num2;
     logger.info("#ways with 2 = " + num2);
     return res;
+  }
+
+  private boolean isForbidden(int candId1, int candId2, int dx, int dy) {
+    return forbiddenMoves[candId1][candId2][dx + offset][dy + offset];
   }
 
   private int initParams() throws NoCellException {
@@ -580,8 +585,7 @@ public class Judge {
     return res;
   }
 
-  //  private void generateGraph(Bits[][][] forbiddenMoves) {
-  private void generateGraph(boolean[][][][] forbiddenMoves) {
+  private void generateGraph() {
     int numAllCombination = nodes.size() * maskToState.size();
     int progress = 0;
     long[] masks = new long[nodes.size()];
@@ -604,7 +608,7 @@ public class Judge {
           if (u.myId < v.myId) {
             continue;
           }
-          boolean canPutTogether = canPutTogether(forbiddenMoves, v, u);
+          boolean canPutTogether = canPutTogether(v, u);
           if (!canPutTogether) {
             continue;
           }
@@ -621,10 +625,10 @@ public class Judge {
     }
   }
 
-  private boolean canPutTogether(boolean[][][][] forbiddenMoves, Node v, Node u) {
+  private boolean canPutTogether(Node v, Node u) {
     int dx = v.candMoveVec.x - u.candMoveVec.x;
     int dy = v.candMoveVec.y - u.candMoveVec.y;
-    if (forbiddenMoves[v.candId][u.candId][dx + offset][dy + offset]) {
+    if (isForbidden(v.candId, u.candId, dx, dy)) {
       return false;
     }
     return true;

@@ -119,7 +119,7 @@ public enum Validator {
         return Decision.NG;
       }
       boolean res = an.hasNoHole();
-      return Decision.OK;
+      return res ? Decision.OK : Decision.NG;
     }
   }, AllowHole {
     @Override

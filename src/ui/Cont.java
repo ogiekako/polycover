@@ -333,6 +333,7 @@ public class Cont implements AbstCont, ProgressMonitor {
                 new BestResultMonitor() {
                   @Override
                   public void update(Result result) {
+                    Debug.debug("obj: " + result.objective);
                     Cont.this.setCand(result.convertedCand);
                   }
                 }).build();

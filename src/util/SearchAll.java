@@ -47,7 +47,7 @@ public class SearchAll {
   }
 
   private void run() throws FileNotFoundException, NoCellException {
-    List<Poly> probs = FileUtil.allPolysUnder(new File("problem"), ".no");
+    List<Poly> probs = FileUtil.allPolysUnder(new File("problem/7"), ".no");
     List<Poly> cands = FileUtil.allPolysUnder(new File("ans"), ".ans");
     List<E> res = new ArrayList<E>();
     ProgressMonitor monitor = new ProgressMonitor() {
@@ -108,10 +108,10 @@ public class SearchAll {
         Poly seed = e.cand;
         AIOption opt = new AIOption();
         opt.rotSym = true;
-        opt.queueSize = 5;
-        opt.maxIter = 100;
+        opt.queueSize = 20;
+        opt.maxIter = 200;
         opt.objective = Evaluator.DepthAndNumSolutionsIn2;
-        opt.validator = Validator.Inner_9Comp_NoDiag_ConcatMinComp;
+        opt.validator = Validator.AllowHoleDisallowDiagonal;
         Result result = AI.builder(prob)
             .setOption(opt)
             .setLatencyMetric(latency)

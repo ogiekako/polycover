@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -57,12 +58,14 @@ public class Judge {
   }
 
   int numCellsInProblem;
-  List<Poly> candidates;
+  ArrayList<Candidate> candidates;
   List<Node> nodes;
   long[] masks;
   Map<Long, List<Node>> maskToState;
   int offset;
   long numSolutions;
+  private Poly boundingPoly;
+  private Poly innerPoly;
 
   Judge(Poly problem, Poly candidate) {
     this.problem = problem;
@@ -135,6 +138,7 @@ public class Judge {
    * また,その内側にはブロックがおいてあるかのように,入れない.
    */
   public Result judge() throws NoCellException {
+    candidate = candidate.clone();
     logger.info(Debug.toString("Judge start with opt: ", opt));
 
     opt.latencyMetric.tick("initParams");
@@ -244,27 +248,34 @@ public class Judge {
     }
     logger.info(Debug.toString("num states", nodes.size()));
 
-    opt.latencyMetric.tick("computeForbiddenMoves");
+    opt.latencyMetric.tick("computeForbiddenMovesPrep");
     boolean[][][][] forbiddenMoves =
         new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
-//    cand[i] cannot be moved by these dirs not to overlap with cand[j].
 
+    Cell[][] innerPlusCands = new Cell[candidates.size()][];
     for (int i = 0; i < candidates.size(); i++) {
-      for (int j = 0; j < enabledCellsForCand[i].length; j++) {
-        Cell c = enabledCellsForCand[i][j];
+      List<Cell> innerPlusCand = new ArrayList<Cell>();
+      innerPlusCand.addAll(Arrays.asList(toCells(candidates.get(i).inner)));
+      innerPlusCand.addAll(Arrays.asList(toCells(candidates.get(i).cand)));
+      innerPlusCands[i] = innerPlusCand.toArray(new Cell[innerPlusCand.size()]);
+    }
+    opt.latencyMetric.tack("computeForbiddenMovesPrep");
+    opt.latencyMetric.tick("computeForbiddenMoves");
+    for (int i = 0; i < candidates.size(); i++) {
+      for (int j = 0; j < innerPlusCands[i].length; j++) {
+        Cell c = innerPlusCands[i][j];
         for (int k = 0; k < j; k++) {
-          Cell d = enabledCellsForCand[i][k];
+          Cell d = innerPlusCands[i][k];
           int dx = d.x - c.x;
           int dy = d.y - c.y;
           forbiddenMoves[i][i][dx + offset][dy + offset] = true;
           forbiddenMoves[i][i][-dx + offset][-dy + offset] = true;
         }
       }
-
-      for (Cell c : enabledCellsForCand[i]) {
-        for (int j = 0; j < i; j++) {
+      for (int j = 0; j < i; j++) {
+        for (Cell c : innerPlusCands[i]) {
           boolean[][] forbid = forbiddenMoves[i][j];
-          for (Cell d : enabledCellsForCand[j]) {
+          for (Cell d : innerPlusCands[j]) {
             int dx = d.x - c.x;
             int dy = d.y - c.y;
             if (!forbid[dx + offset][dy + offset]) {
@@ -426,22 +437,101 @@ public class Judge {
       }
     }
     opt.monitor.setValue(0);
-    List<Cell> cellsOnPeripheral = getCellsOnPeripheral(candidate.trim(), opt.allowedCandDepth);
-    if (cellsOnPeripheral.isEmpty()) {
-      throw new NoCellException();
+
+    makeBoundingPoly(candidate);
+    makeInnerPoly(boundingPoly, opt.allowedCandDepth);
+    for (int i = 0; i < candidate.getHeight(); i++) {
+      for (int j = 0; j < candidate.getWidth(); j++) {
+        if (candidate.get(i, j) && innerPoly.get(i, j)) {
+          candidate.flip(i, j);
+        }
+      }
     }
-    candidate = new Poly(cellsOnPeripheral);
-    HashSet<Poly> candSet = new HashSet<Poly>();
+//    candidate = new Poly(cellsOnPeripheral);
+    LinkedHashSet<Candidate> candSet = new LinkedHashSet<Candidate>();
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 4; j++) {
-        candSet.add(candidate);
+        candSet.add(new Candidate(candidate, boundingPoly, innerPoly));
         candidate = candidate.rot90();
+        boundingPoly = boundingPoly.rot90();
+        innerPoly = innerPoly.rot90();
       }
       candidate = candidate.flip();
+      boundingPoly = boundingPoly.flip();
+      innerPoly = innerPoly.flip();
     }
-    candidates = new ArrayList<Poly>(candSet);
+    candidates = new ArrayList<Candidate>(candSet);
     enabledCellsForCand = enabledCandCells();
-    return cellsOnPeripheral.size();
+    return enabledCellsForCand[0].length;
+  }
+
+  private static class Candidate {
+
+    Poly cand;
+    Poly bound;
+    Poly inner;
+
+    public Candidate(Poly cand, Poly bound, Poly inner) {
+      this.bound = bound;
+      this.cand = cand;
+      this.inner = inner;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      Candidate candidate = (Candidate) o;
+
+      if (!cand.equals(candidate.cand)) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      return cand.hashCode();
+    }
+  }
+
+  private void makeInnerPoly(Poly boundingPoly, int depth) {
+    if (depth >= Option.INF) {
+      innerPoly = new Poly(boundingPoly.getHeight(), boundingPoly.getWidth());
+      return;
+    }
+    int m = depth == 0 ? 1 : depth * 4;
+    int[] dx = new int[m], dy = new int[m];
+    m = 0;
+    for (int x = -depth; x <= depth; x++) {
+      for (int y = -depth; y <= depth; y++) {
+        if (Math.abs(x) + Math.abs(y) == depth) {
+          dx[m] = x;
+          dy[m] = y;
+          m++;
+        }
+      }
+    }
+    int h = boundingPoly.getHeight(), w = boundingPoly.getWidth();
+    innerPoly = boundingPoly.clone();
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (!innerPoly.get(i, j)) {
+          continue;
+        }
+        for (int d = 0; d < m; d++) {
+          int nx = i + dx[d], ny = j + dy[d];
+          if (!get(boundingPoly, nx, ny)) {
+            innerPoly.flip(i, j);
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  private boolean get(Poly poly, int x, int y) {
+    int h = poly.getHeight(), w = poly.getWidth();
+    return 0 <= x && x < h && 0 <= y && y < w && poly.get(x, y);
   }
 
   private void cleanUpStates() {
@@ -531,26 +621,11 @@ public class Judge {
     }
   }
 
-  //  private boolean canPutTogether(Bits[][][] forbiddenMoves, Node v, Node u) {
   private boolean canPutTogether(boolean[][][][] forbiddenMoves, Node v, Node u) {
     int dx = v.candMoveVec.x - u.candMoveVec.x;
     int dy = v.candMoveVec.y - u.candMoveVec.y;
-//    if (forbiddenMoves[v.candId][u.candId][dx + offset].get(dy + offset)) {
     if (forbiddenMoves[v.candId][u.candId][dx + offset][dy + offset]) {
       return false;
-    }
-
-    if (opt.allowedCandDepth < Option.INF) {
-      int h =
-          Math.min(candidates.get(v.candId).getHeight(),
-                   candidates.get(u.candId).getHeight());
-      int w =
-          Math.min(candidates.get(v.candId).getWidth(),
-                   candidates.get(u.candId).getWidth());
-      if (Math.abs(dx) < h - opt.allowedCandDepth
-          && Math.abs(dy) < w - opt.allowedCandDepth) {
-        return false;
-      }
     }
     return true;
   }
@@ -619,33 +694,68 @@ public class Judge {
     int numCandPattern = candidates.size();
     Cell[][] enabledCells = new Cell[numCandPattern][];
     for (int i = 0; i < candidates.size(); i++) {
-      List<Cell> cellsOnPeripheral = getCellsOnPeripheral(candidates.get(i), opt.allowedCandDepth);
-      enabledCells[i] = cellsOnPeripheral.toArray(new Cell[cellsOnPeripheral.size()]);
+      enabledCells[i] = toCells(candidates.get(i).cand);
     }
     return enabledCells;
   }
 
-  private List<Cell> getCellsOnPeripheral(Poly poly, int depth) {
-    List<Cell> cells = new ArrayList<Cell>();
+  private Cell[] toCells(Poly poly) {
+    List<Cell> cs = new ArrayList<Cell>();
     for (int i = 0; i < poly.getHeight(); i++) {
       for (int j = 0; j < poly.getWidth(); j++) {
-        if (isCellOnPeripheral(poly, i, j, depth)) {
-          cells.add(new Cell(i, j));
+        if (poly.get(i, j)) {
+          cs.add(new Cell(i, j));
         }
       }
     }
-    return cells;
+    return cs.toArray(new Cell[cs.size()]);
   }
 
-  private boolean isCellOnPeripheral(Poly poly, int x, int y, int depth) {
+  /*
+  bounding poly: a cell A is in the bounding poly if A is marked or there are two cells such that
+  A is between the cells.
+  A cell is in inner poly with depth D if all the cells within manhattan distance D from the cell
+  are bounding poly. Other cells are said on peripheral.
+   */
+  private void makeBoundingPoly(Poly poly) {
     int h = poly.getHeight(), w = poly.getWidth();
-    if (!poly.get(x, y)) {
-      return false;
+    int[][] cnt = new int[h][w];
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (poly.get(i, j)) {
+          break;
+        }
+        cnt[i][j]++;
+      }
+      for (int j = w - 1; j >= 0; j--) {
+        if (poly.get(i, j)) {
+          break;
+        }
+        cnt[i][j]++;
+      }
     }
-    if (depth <= x && x < h - depth && depth <= y && y < w - depth) {
-      return false;
+    for (int j = 0; j < w; j++) {
+      for (int i = 0; i < h; i++) {
+        if (poly.get(i, j)) {
+          break;
+        }
+        cnt[i][j]++;
+      }
+      for (int i = h - 1; i >= 0; i--) {
+        if (poly.get(i, j)) {
+          break;
+        }
+        cnt[i][j]++;
+      }
     }
-    return true;
+    boundingPoly = new Poly(h, w);
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (cnt[i][j] < 2) {
+          boundingPoly.flip(i, j);
+        }
+      }
+    }
   }
 
   List<Node> dfs(List<Node> nodeStack, long mask, int currentNumCands) {

@@ -39,6 +39,15 @@ public class Poly {
     this(toArray(cells));
   }
 
+  public Poly(int h, int w) {
+    this.h = h;
+    this.w = w;
+    rows = new Bits[h];
+    for (int i = 0; i < h; i++) {
+      rows[i] = new Bits();
+    }
+  }
+
   private static boolean[][] toArray(Collection<Cell> cells) {
     int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
     int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;

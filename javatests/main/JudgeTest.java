@@ -263,4 +263,38 @@ public class JudgeTest {
       Assert.assertEquals(tc.wantNumSolutions, result.numWayOfCovering);
     }
   }
+
+  @Test
+  public void testNewDepth() throws Exception {
+    boolean[][] cand = s2b(new String[]{
+        "...#...",
+        "...#...",
+        "...#...",
+        "#######",
+        "...#...",
+        "...#...",
+        "...#...",
+    });
+    Poly candidate = new Poly(cand);
+    boolean[][] prob = s2b(new String[]{
+        "#####",
+        "#####",
+    });
+    Poly problem = new Poly(prob);
+    Covering res = Judge.newBuilder(problem, candidate)
+        .setMinNumCands(2)
+        .setMaxNumCands(2)
+        .setEnabledCandDepth(2)
+        .build().judge().covering;
+
+    Assert.assertTrue(res != null);
+
+    res = Judge.newBuilder(problem, candidate)
+        .setMinNumCands(2)
+        .setMaxNumCands(2)
+        .setEnabledCandDepth(1)
+        .build().judge().covering;
+
+    Assert.assertTrue(res == null);
+  }
 }

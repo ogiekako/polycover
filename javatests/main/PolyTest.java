@@ -7,7 +7,7 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PolyArrayTest {
+public class PolyTest {
 
   @Test
   public void samePolyShouldHaveSameHashCodeAndEqual() throws Exception {
@@ -19,9 +19,9 @@ public class PolyArrayTest {
         {true, true},
         {false, true}
     };
-    Set<PolyArray> set = new HashSet<PolyArray>();
-    PolyArray polyA = new PolyArray(a);
-    PolyArray polyB = new PolyArray(b);
+    Set<Poly> set = new HashSet<Poly>();
+    Poly polyA = new Poly(a);
+    Poly polyB = new Poly(b);
     set.add(polyA);
     set.add(polyB);
     Assert.assertEquals(1, set.size());
@@ -38,9 +38,9 @@ public class PolyArrayTest {
         {true, true},
         {false, false}
     };
-    Set<PolyArray> set = new HashSet<PolyArray>();
-    PolyArray polyA = new PolyArray(a);
-    PolyArray polyB = new PolyArray(b);
+    Set<Poly> set = new HashSet<Poly>();
+    Poly polyA = new Poly(a);
+    Poly polyB = new Poly(b);
     set.add(polyA);
     set.add(polyB);
     Assert.assertEquals(2, set.size());

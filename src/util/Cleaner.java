@@ -11,7 +11,6 @@ import main.Judge;
 import main.NoCellException;
 import main.Poly;
 import main.PolyAnalyzer;
-import main.PolyArray;
 
 /**
  * Cleaner clean up files under ans/ and problem/.
@@ -169,7 +168,7 @@ public class Cleaner {
         }
       }
       Judge.Result result =
-          Judge.newBuilder(prob, PolyArray.load(new Scanner(new File(ansPath)))).build().judge();
+          Judge.newBuilder(prob, Poly.load(new Scanner(new File(ansPath)))).build().judge();
       if (result.covering != null) {
         throw new AssertionError(String.format("%s is not a solution for %s.",
                                                ansPath, prob.filePath()));

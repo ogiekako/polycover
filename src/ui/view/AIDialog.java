@@ -11,7 +11,7 @@ import ai.AIOption;
 import ai.Evaluator;
 import ai.Result;
 import ai.Validator;
-import main.PolyArray;
+import main.Poly;
 import ui.Cont;
 import ui.DialogShower;
 import util.Debug;
@@ -116,16 +116,16 @@ public class AIDialog extends JDialog {
 
   public static void main(String[] args) {
     final Cont cont = new Cont();
-    cont.setProblem(PolyArray.load(new Scanner("3 3\n"
-                                               + "###\n"
-                                               + "..#\n"
-                                               + "..#")));
-    cont.setCand(PolyArray.load(new Scanner("5 5\n"
-                                            + ".#...\n"
-                                            + "###..\n"
-                                            + "..##.\n"
-                                            + "...##\n"
-                                            + "...#.\n")));
+    cont.setProblem(Poly.load(new Scanner("3 3\n"
+                                          + "###\n"
+                                          + "..#\n"
+                                          + "..#")));
+    cont.setCand(Poly.load(new Scanner("5 5\n"
+                                       + ".#...\n"
+                                       + "###..\n"
+                                       + "..##.\n"
+                                       + "...##\n"
+                                       + "...#.\n")));
     cont.addView(new View() {
       @Override
       public void update() {

@@ -17,8 +17,8 @@ import main.Cell;
 import main.Covering;
 import main.Judge;
 import main.Poly;
-import main.PolyArray;
 import main.ProgressMonitor;
+import main.Stopwatch;
 
 /**
  * Monitorable and abortable AI.
@@ -28,6 +28,7 @@ public class AI {
   public static final Logger logger = Logger.getLogger(AI.class.getName());
 
   private ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
+  private Stopwatch latency = new Stopwatch();
   private AIOption opt = new AIOption();
 
   public boolean abort = false;
@@ -57,11 +58,12 @@ public class AI {
       logger.severe(String.format("Error: %s", e));
     }
     monitor.setValue(0);
-    return new Result(bestState.cand, bestState.objective);
+    return new Result(bestState.cand.trim(), bestState.objective);
   }
 
   private void computeBest(List<Poly> seeds) {
     for (Poly seed : seeds) {
+      seed = expand(seed, 3);
       if (seed.getWidth() != seed.getHeight()) {
         throw new IllegalArgumentException("height and width must be the same");
       }
@@ -89,6 +91,17 @@ public class AI {
       }
       addNexts(cur);
     }
+  }
+
+  private Poly expand(Poly seed, int d) {
+    int n = seed.getHeight();
+    boolean[][] as = new boolean[n + d * 2][n + d * 2];
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < n; j++) {
+        as[d + i][d + j] = seed.get(i, j);
+      }
+    }
+    return new Poly(as);
   }
 
   private void addNexts(State cur) {
@@ -152,6 +165,8 @@ public class AI {
     minY -= curOffsetY;
 
     List<Poly> possibleNextCands = new ArrayList<Poly>();
+    List<Set<Cell>> cellSets = new ArrayList<Set<Cell>>();
+    HashSet<Cell> seen = new HashSet<Cell>();
     for (int i = 0; i < n; i++) {
       if (i < curOffsetX || minX + i >= covering.height()) {
         continue;
@@ -165,10 +180,9 @@ public class AI {
           int j2 = n - 1 - j;
           TreeSet<Cell> cs = new TreeSet<Cell>();
           Cell c = new Cell(i, j);
-          if (!opt.validator.valid(cur.cand, c)) {
+          if (seen.contains(c)) {
             continue;
           }
-          Poly nxtCand = cur.cand.clone();
           cs.add(c);
           if (opt.rotSym || opt.revRotSym) {
             cs.add(new Cell(j, i2));
@@ -181,11 +195,19 @@ public class AI {
             cs.add(new Cell(i2, j));
             cs.add(new Cell(j2, i2));
           }
-          flip(nxtCand, cs);
-
-          possibleNextCands.add(nxtCand);
+          seen.addAll(cs);
+          cellSets.add(cs);
         }
       }
+    }
+    for (Set<Cell> cs : cellSets) {
+      if (!opt.validator.valid(cur.cand, cs)) {
+        continue;
+      }
+      Poly nxtCand = cur.cand.clone();
+      flip(nxtCand, cs);
+
+      possibleNextCands.add(nxtCand);
     }
     return possibleNextCands;
   }
@@ -209,7 +231,7 @@ public class AI {
   }
 
   private State eval(Poly prob, Poly cand) {
-    Evaluator.Result res = opt.objective.eval(prob, cand);
+    Evaluator.Result res = opt.objective.eval(prob, cand, latency);
     return new State(cand, res.objective, res.covering);
   }
 
@@ -217,7 +239,7 @@ public class AI {
 
   private void updateAndTellBestState(State s) {
     bestState = s;
-    tellBestResult(new Result(s.cand, s.objective));
+    tellBestResult(new Result(s.cand.trim(), s.objective));
   }
 
   private void tellBestResult(Result result) {
@@ -252,6 +274,7 @@ public class AI {
       ai.bestResultMonitors.add(m);
       return this;
     }
+
   }
 
   public static AI.Builder builder(Poly problem) {
@@ -269,8 +292,8 @@ public class AI {
 
     String probPath = args[0];
     String initCandPath = args[1];
-    Poly prob = PolyArray.load(new Scanner(new File(probPath)));
-    Poly cand = PolyArray.load(new Scanner(new File(initCandPath)));
+    Poly prob = Poly.load(new Scanner(new File(probPath)));
+    Poly cand = Poly.load(new Scanner(new File(initCandPath)));
     Poly res = AI.builder(prob).build().solve(cand).convertedCand;
     if (res == null) {
       System.out.println("Failed");

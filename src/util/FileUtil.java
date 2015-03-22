@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Scanner;
 
 import main.Poly;
-import main.PolyArray;
 
 public class FileUtil {
 
@@ -48,7 +47,7 @@ public class FileUtil {
     for (String p : paths) {
       Poly poly;
       try {
-        poly = PolyArray.load(new Scanner(new File(p)));
+        poly = Poly.load(new Scanner(new File(p)));
       } catch (FileNotFoundException e) {
         throw new IllegalArgumentException(p);
       }

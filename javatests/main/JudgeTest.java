@@ -29,13 +29,13 @@ public class JudgeTest {
         "#...#",
         "#####"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
 
     Assert.assertNull(res);
@@ -49,13 +49,13 @@ public class JudgeTest {
         "#...#",
         "#####"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertNotNull(res);
   }
@@ -68,13 +68,13 @@ public class JudgeTest {
         "#...#",
         "#####"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering
         res =
         Judge.newBuilder(problem, candidate).setMaxNumCands(2).setEnabledCandDepth(1).build()
@@ -90,13 +90,13 @@ public class JudgeTest {
         "#...#",
         "#####"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering
         res =
         Judge.newBuilder(problem, candidate).setMaxNumCands(2).setEnabledCandDepth(2).build()
@@ -112,13 +112,13 @@ public class JudgeTest {
         "#...#",
         "#####"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = Judge.newBuilder(problem, candidate).setMaxNumCands(1).build().judge().covering;
     Assert.assertTrue(Debug.toString(res), res == null);
   }
@@ -130,13 +130,13 @@ public class JudgeTest {
         "#.#",
         "###"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "#.#",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering
         res =
         Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(3).build()
@@ -151,13 +151,13 @@ public class JudgeTest {
         "#.#",
         "###"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "#.#",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering
         res =
         Judge.newBuilder(problem, candidate).setMinNumCands(1).setMaxNumCands(3).build()
@@ -172,17 +172,15 @@ public class JudgeTest {
         "#.#",
         "###"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "#.#",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
-    Covering
-        res =
-        Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(4).build()
-            .judge().covering;
+    Poly problem = new Poly(acd);
+    Covering res = Judge.newBuilder(problem, candidate).setMinNumCands(2).setMaxNumCands(4).build()
+        .judge().covering;
     Assert.assertNotNull(res);
   }
 
@@ -191,11 +189,11 @@ public class JudgeTest {
     boolean[][] ac = new boolean[][]{
         {true}
     };
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = new boolean[][]{
         {true}
     };
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertTrue(res != null);
   }
@@ -205,11 +203,11 @@ public class JudgeTest {
     boolean[][] ac = new boolean[][]{
         {true}
     };
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = new boolean[][]{
         {true, true}
     };
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = Judge.newBuilder(problem, candidate).build().judge().covering;
     Assert.assertTrue(res != null);
   }
@@ -220,13 +218,13 @@ public class JudgeTest {
         "##",
         "##"
     });
-    PolyArray candidate = new PolyArray(ac);
+    Poly candidate = new Poly(ac);
     boolean[][] acd = s2b(new String[]{
         "###",
         "###",
         "###"
     });
-    PolyArray problem = new PolyArray(acd);
+    Poly problem = new Poly(acd);
     Covering res = new Judge(problem, candidate).judge().covering;
 
     Assert.assertTrue(res != null);
@@ -255,8 +253,8 @@ public class JudgeTest {
         new TC("1 3\n###", "1 2\n##", 1 * 3 + 3 * 1 + 3 * 2 * 3)
     );
     for (TC tc : tcs) {
-      PolyArray prob = PolyArray.load(new Scanner(tc.prob));
-      PolyArray cand = PolyArray.load(new Scanner(tc.cand));
+      Poly prob = Poly.load(new Scanner(tc.prob));
+      Poly cand = Poly.load(new Scanner(tc.cand));
       Debug.debug("prob:", prob);
       Debug.debug("cand", cand);
       Judge.Result result = Judge.newBuilder(prob, cand)

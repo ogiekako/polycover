@@ -10,7 +10,7 @@ import java.util.Scanner;
 
 import main.Covering;
 import main.Judge;
-import main.PolyArray;
+import main.Poly;
 import main.Stopwatch;
 import util.Debug;
 import util.FileUtil;
@@ -24,8 +24,8 @@ public class JudgeTestLong {
     String ansPath = "ans/6/T.ans";
     Scanner probIn = new Scanner(new File(probPath));
     Scanner ansIn = new Scanner(new File(ansPath));
-    PolyArray prob = PolyArray.load(probIn);
-    PolyArray ans = PolyArray.load(ansIn);
+    Poly prob = Poly.load(probIn);
+    Poly ans = Poly.load(ansIn);
     Covering result =
         Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
     Assert.assertNull(Debug.toString(result), result);
@@ -46,8 +46,8 @@ public class JudgeTestLong {
         System.err.printf("%s %s\n", probPath, ansPath);
         Scanner probIn = new Scanner(new File(probPath));
         Scanner ansIn = new Scanner(new File(ansPath));
-        PolyArray prob = PolyArray.load(probIn);
-        PolyArray ans = PolyArray.load(ansIn);
+        Poly prob = Poly.load(probIn);
+        Poly ans = Poly.load(ansIn);
         Covering result =
             Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
         Assert.assertNull(Debug.toString(result), result);
@@ -72,8 +72,8 @@ public class JudgeTestLong {
           String comb = String.format("%s %s", probPath, ansPath);
           Scanner probIn = new Scanner(new File(probPath));
           Scanner ansIn = new Scanner(new File(ansPath));
-          PolyArray prob = PolyArray.load(probIn);
-          PolyArray ans = PolyArray.load(ansIn);
+          Poly prob = Poly.load(probIn);
+          Poly ans = Poly.load(ansIn);
           Covering result =
               Judge.newBuilder(prob, ans).setLatencyMetric(latencyMetric).build().judge().covering;
           if (result == null) {

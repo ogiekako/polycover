@@ -36,19 +36,15 @@ public class PolyAnalyzer {
 
   private boolean connected(boolean[][] cell) {
     int h = cell.length, w = cell[0].length;
-    loop:
+    boolean done = false;
     for (int i = 0; i < h; i++) {
       for (int j = 0; j < w; j++) {
         if (cell[i][j]) {
+          if (done) {
+            return false;
+          }
           dfs(cell, i, j);
-          break loop;
-        }
-      }
-    }
-    for (int i = 0; i < h; i++) {
-      for (int j = 0; j < w; j++) {
-        if (cell[i][j]) {
-          return false;
+          done = true;
         }
       }
     }
@@ -113,5 +109,25 @@ public class PolyAnalyzer {
       }
     }
     return false;
+  }
+
+  public int numComponents() {
+    int h = poly.getHeight(), w = poly.getWidth();
+    boolean[][] cell = new boolean[h + 2][w + 2];
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        cell[i + 1][j + 1] = poly.get(i, j);
+      }
+    }
+    int res = 0;
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (cell[i][j]) {
+          res++;
+          dfs(cell, i, j);
+        }
+      }
+    }
+    return res;
   }
 }

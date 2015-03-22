@@ -1,13 +1,13 @@
 package main;
 
 import java.util.Arrays;
-import java.util.BitSet;
+import java.util.Collection;
 import java.util.Scanner;
 
 public class Poly {
 
-  private int h, w;
-  private BitSet[] rows;
+  private final int h, w;
+  private Bits[] rows;
   private String filePath;
   private int hash;
 
@@ -15,9 +15,9 @@ public class Poly {
     assert a.length > 0 && a[0].length > 0;
     h = a.length;
     w = a[0].length;
-    rows = new BitSet[h];
+    rows = new Bits[h];
     for (int i = 0; i < h; i++) {
-      rows[i] = new BitSet();
+      rows[i] = new Bits();
       for (int j = 0; j < w; j++) {
         if (a[i][j]) {
           rows[i].set(j);
@@ -26,32 +26,50 @@ public class Poly {
     }
   }
 
-  public Poly(BitSet[] rows) {
-    this.rows = new BitSet[rows.length];
+  public Poly(Bits[] rows, int width) {
+    h = rows.length;
+    w = width;
+    this.rows = new Bits[rows.length];
     for (int i = 0; i < rows.length; i++) {
-      this.rows[i] = (BitSet) rows[i].clone();
+      this.rows[i] = rows[i].clone();
     }
   }
 
-  @Override
+  public Poly(Collection<Cell> cells) {
+    this(toArray(cells));
+  }
+
+  private static boolean[][] toArray(Collection<Cell> cells) {
+    int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+    int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+    for (Cell c : cells) {
+      minX = Math.min(minX, c.x);
+      minY = Math.min(minY, c.y);
+      maxX = Math.max(maxX, c.x);
+      maxY = Math.max(maxY, c.y);
+    }
+    boolean[][] as = new boolean[maxX - minX + 1][maxY - minY + 1];
+    for (Cell c : cells) {
+      as[c.x - minX][c.y - minY] = true;
+    }
+    return as;
+  }
+
   public boolean get(int x, int y) {
-    if (!(0 <= x && x < h && 0 <= y && y < w)) {
+    if (!(0 <= x && x < getHeight() && 0 <= y && y < getWidth())) {
       throw new IllegalArgumentException(x + " " + y);
     }
     return rows[x].get(y);
   }
 
-  @Override
   public void flip(int x, int y) {
     rows[x].flip(y);
   }
 
-  @Override
   public int getHeight() {
     return h;
   }
 
-  @Override
   public int getWidth() {
     return w;
   }
@@ -68,7 +86,7 @@ public class Poly {
     return new Poly(array);
   }
 
-  @Override
+
   public Poly rot90() {
     int h = getHeight(), w = getWidth();
     boolean[][] bs = new boolean[w][h];
@@ -80,7 +98,7 @@ public class Poly {
     return new Poly(bs);
   }
 
-  @Override
+
   public Poly flip() {
     int h = getHeight(), w = getWidth();
     boolean[][] bs = new boolean[h][w];
@@ -92,7 +110,6 @@ public class Poly {
     return new Poly(bs);
   }
 
-  @Override
   public Poly trim() {
     int x1 = 0, x2 = getHeight() - 1;
     int y1 = 0, y2 = getWidth() - 1;
@@ -175,7 +192,17 @@ public class Poly {
 
   public boolean equals(Object obj) {
     Poly other = (Poly) obj;
-    return Arrays.deepEquals(rows, other.rows);
+    if (h != other.h || w != other.w) {
+      return false;
+    }
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (get(i, j) != other.get(i, j)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   public String toString() {
@@ -190,18 +217,23 @@ public class Poly {
     return b.toString();
   }
 
-  @Override
   public Poly clone() {
-    return new Poly(rows);
+    return new Poly(rows, w);
   }
 
-  @Override
   public String filePath() {
     return filePath;
   }
 
-  @Override
   public void setFilePath(String filePath) {
     this.filePath = filePath;
+  }
+
+  Bits[] toRows() {
+    Bits[] res = new Bits[rows.length];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = rows[i].clone();
+    }
+    return res;
   }
 }

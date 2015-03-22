@@ -229,15 +229,15 @@ public class Judge {
         bs[i][j] = Math.abs(res[i][j]) == 1;
       }
     }
-    Poly p = new PolyArray(bs);
-    return p.trim().equals(computePeripherlaPoly(candidate, opt.allowedCandDepth).trim());
+    Poly p = new Poly(bs);
+    return p.trim().equals(candidate.trim());
   }
 
   private List<Node> solve(int numEnabledCandCells) {
+    logger.info("solve");
     opt.latencyMetric.tick("computeAllStates");
-    nodes =
-        computeAllStates(numEnabledCandCells, enabledCellsForCand,
-                         numCellsInProblem, cellsInProblem);
+    nodes = computeAllStates(numEnabledCandCells, enabledCellsForCand,
+                             numCellsInProblem, cellsInProblem);
     opt.latencyMetric.tack("computeAllStates");
     for (int i = 0; i < nodes.size(); i++) {
       nodes.get(i).myId = i;
@@ -247,22 +247,36 @@ public class Judge {
     opt.latencyMetric.tick("computeForbiddenMoves");
     boolean[][][][] forbiddenMoves =
         new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
-        // cand[i] cannot be moved by these dirs not to overlap with cand[j].
-//    int numForbiddenMoves = 0;
+//    cand[i] cannot be moved by these dirs not to overlap with cand[j].
+
     for (int i = 0; i < candidates.size(); i++) {
-      for (int j = 0; j < candidates.size(); j++) {
-        for (Cell c : enabledCellsForCand[i]) {
+      for (int j = 0; j < enabledCellsForCand[i].length; j++) {
+        Cell c = enabledCellsForCand[i][j];
+        for (int k = 0; k < j; k++) {
+          Cell d = enabledCellsForCand[i][k];
+          int dx = d.x - c.x;
+          int dy = d.y - c.y;
+          forbiddenMoves[i][i][dx + offset][dy + offset] = true;
+          forbiddenMoves[i][i][-dx + offset][-dy + offset] = true;
+        }
+      }
+
+      for (Cell c : enabledCellsForCand[i]) {
+        for (int j = 0; j < i; j++) {
+          boolean[][] forbid = forbiddenMoves[i][j];
           for (Cell d : enabledCellsForCand[j]) {
             int dx = d.x - c.x;
             int dy = d.y - c.y;
-              forbiddenMoves[i][j][dx + offset][dy + offset] = true;
-
+            if (!forbid[dx + offset][dy + offset]) {
+              forbid[dx + offset][dy + offset] = true;
+              forbiddenMoves[j][i][-dx + offset][-dy + offset] = true;
+            }
           }
         }
       }
     }
+
     opt.latencyMetric.tack("computeForbiddenMoves");
-//    logger.info(Debug.toString("numForbiddenMoves", numForbiddenMoves));
 
     computeMaskToState();
 
@@ -347,14 +361,15 @@ public class Judge {
     return res;
   }
 
-  private String stringify(List<Node> nodes) {
-    StringBuilder b = new StringBuilder();
-    for (Node n : nodes) {
-      b.append(n + "\n");
+  private Bits[] shift(Bits[] board, int k) {
+    Bits[] res = new Bits[board.length];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = board[i].shift(k);
     }
-    return b.toString();
+    return res;
   }
 
+  //  private List<Node> with2cands(Bits[][][] forbiddenMoves) {
   private List<Node> with2cands(boolean[][][][] forbiddenMoves) {
     long all = (1L << numCellsInProblem) - 1;
     List<Node> res = null;
@@ -411,7 +426,11 @@ public class Judge {
       }
     }
     opt.monitor.setValue(0);
-    candidate = candidate.trim();
+    List<Cell> cellsOnPeripheral = getCellsOnPeripheral(candidate.trim(), opt.allowedCandDepth);
+    if (cellsOnPeripheral.isEmpty()) {
+      throw new NoCellException();
+    }
+    candidate = new Poly(cellsOnPeripheral);
     HashSet<Poly> candSet = new HashSet<Poly>();
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 4; j++) {
@@ -421,18 +440,8 @@ public class Judge {
       candidate = candidate.flip();
     }
     candidates = new ArrayList<Poly>(candSet);
-    int numEnabledCandCells = getCellsOnPeripheral(candidate, opt.allowedCandDepth).size();
-    if (numEnabledCandCells == 0) {
-      throw new NoCellException();
-    }
-    logger.info(Debug.toString("numEnabledCandCells", numEnabledCandCells));
     enabledCellsForCand = enabledCandCells();
-    for (Cell[] cs : enabledCellsForCand) {
-      if (cs.length != numEnabledCandCells) {
-        throw new AssertionError();
-      }
-    }
-    return numEnabledCandCells;
+    return cellsOnPeripheral.size();
   }
 
   private void cleanUpStates() {
@@ -481,6 +490,7 @@ public class Judge {
     return res;
   }
 
+  //  private void generateGraph(Bits[][][] forbiddenMoves) {
   private void generateGraph(boolean[][][][] forbiddenMoves) {
     int numAllCombination = nodes.size() * maskToState.size();
     int progress = 0;
@@ -521,9 +531,11 @@ public class Judge {
     }
   }
 
+  //  private boolean canPutTogether(Bits[][][] forbiddenMoves, Node v, Node u) {
   private boolean canPutTogether(boolean[][][][] forbiddenMoves, Node v, Node u) {
     int dx = v.candMoveVec.x - u.candMoveVec.x;
     int dy = v.candMoveVec.y - u.candMoveVec.y;
+//    if (forbiddenMoves[v.candId][u.candId][dx + offset].get(dy + offset)) {
     if (forbiddenMoves[v.candId][u.candId][dx + offset][dy + offset]) {
       return false;
     }
@@ -611,14 +623,6 @@ public class Judge {
       enabledCells[i] = cellsOnPeripheral.toArray(new Cell[cellsOnPeripheral.size()]);
     }
     return enabledCells;
-  }
-
-  private Poly computePeripherlaPoly(Poly poly, int depth) {
-    boolean[][] res = new boolean[poly.getHeight()][poly.getWidth()];
-    for (Cell c : getCellsOnPeripheral(poly, depth)) {
-      res[c.x][c.y] = true;
-    }
-    return new PolyArray(res);
   }
 
   private List<Cell> getCellsOnPeripheral(Poly poly, int depth) {

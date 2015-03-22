@@ -5,7 +5,7 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 import main.NoCellException;
-import main.PolyArray;
+import main.Poly;
 
 public class Judger {
 
@@ -38,8 +38,8 @@ public class Judger {
     String candFileName = args[p++];
     Scanner problemIn = new Scanner(new File(problemFileName));
     Scanner candIn = new Scanner(new File(candFileName));
-    PolyArray problem = PolyArray.load(problemIn);
-    PolyArray cand = PolyArray.load(candIn);
+    Poly problem = Poly.load(problemIn);
+    Poly cand = Poly.load(candIn);
     boolean ok =
         main.Judge.newBuilder(problem, cand)
             .setEnabledCandDepth(maxDepth)

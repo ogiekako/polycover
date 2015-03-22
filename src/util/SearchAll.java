@@ -19,6 +19,7 @@ import main.Judge;
 import main.NoCellException;
 import main.Poly;
 import main.ProgressMonitor;
+import main.Stopwatch;
 
 public class SearchAll {
 
@@ -62,11 +63,12 @@ public class SearchAll {
     };
     int numProb = probs.size();
     int cnt = 0;
+    Stopwatch latency = new Stopwatch();
     for (Poly prob : probs) {
       cnt++;
       monitor.setValue(cnt * 100 / numProb);
       for (Poly cand : cands) {
-        Judge.Builder builder = Judge.newBuilder(prob, cand).setMinNumCands(2).setMaxNumCands(2);
+        Judge.Builder builder = Judge.newBuilder(prob, cand).setMinNumCands(2).setMaxNumCands(2).setLatencyMetric(latency);
         int d = 0;
         boolean ok = true;
         for (int n = 32; n > 0; n /= 2) {
@@ -84,6 +86,7 @@ public class SearchAll {
         res.add(new E(prob, cand, d));
       }
     }
+    System.err.println("latency: " + latency.summary());
     System.err.println("");
     Collections.sort(res);
     HashMap<String, Integer> seen = new HashMap<String, Integer>();
@@ -93,7 +96,7 @@ public class SearchAll {
       if (!seen.containsKey(e.prob.filePath())) {
         seen.put(e.prob.filePath(), 0);
       }
-      if (seen.get(e.prob.filePath()) >= 2) {
+      if (seen.get(e.prob.filePath()) >= 5) {
         continue;
       }
       seen.put(e.prob.filePath(), seen.get(e.prob.filePath()) + 1);
@@ -108,7 +111,7 @@ public class SearchAll {
         opt.queueSize = 5;
         opt.maxIter = 100;
         opt.objective = Evaluator.DepthAndNumSolutionsIn2;
-        opt.validator = Validator.AllowHoleDisallowDiagonal;
+        opt.validator = Validator.Inner9CompNoDiag;
         Result result = AI.builder(prob).setOption(opt).build().solve(seed);
         File tmp;
         try {

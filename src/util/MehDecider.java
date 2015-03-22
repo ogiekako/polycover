@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import main.PolyAnalyzer;
-import main.PolyArray;
+import main.Poly;
 
 public class MehDecider {
 
@@ -31,7 +31,7 @@ public class MehDecider {
   }
 
   public static Type decide(String path, String probDir) throws FileNotFoundException {
-    PolyArray target = PolyArray.load(new Scanner(new File(path)));
+    Poly target = Poly.load(new Scanner(new File(path)));
     PolyAnalyzer analyzer = PolyAnalyzer.of(target);
 
     List<String> ps = FileUtil.allFilesUnder(new File(probDir));
@@ -40,7 +40,7 @@ public class MehDecider {
       if (!p.endsWith(".yes")) {
         continue;
       }
-      PolyArray yesPoly = PolyArray.load(new Scanner(new File(p)));
+      Poly yesPoly = Poly.load(new Scanner(new File(p)));
       if (!target.equals(yesPoly) && analyzer.contains(yesPoly)) {
         meh = true;
         break;

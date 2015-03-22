@@ -4,15 +4,16 @@ import main.Covering;
 import main.Judge;
 import main.NoCellException;
 import main.Poly;
+import main.Stopwatch;
 
 public enum Evaluator {
   DepthAndNumSolutionsIn23 {
     @Override
-    Result eval(Poly prob, Poly cand) {
+    Result eval(Poly prob, Poly cand, Stopwatch latency) {
       long off = (long) 1e6;
-      DepthAndCovering res2 = computeDepthAndCovering(prob, cand, 2, true);
+      DepthAndCovering res2 = computeDepthAndCovering(prob, cand, 2, true, latency);
       if (res2.depth >= INF) {
-        DepthAndCovering res3 = computeDepthAndCovering(prob, cand, 3, true);
+        DepthAndCovering res3 = computeDepthAndCovering(prob, cand, 3, true, latency);
         if (res3.depth >= INF) {
           return new Result(null, INF);
         }
@@ -25,9 +26,9 @@ public enum Evaluator {
   },
   DepthAndNumSolutionsIn2 {
     @Override
-    Result eval(Poly prob, Poly cand) {
+    Result eval(Poly prob, Poly cand, Stopwatch latency) {
       long off = (long) 1e6;
-      DepthAndCovering res2 = computeDepthAndCovering(prob, cand, 2, true);
+      DepthAndCovering res2 = computeDepthAndCovering(prob, cand, 2, true, latency);
       if (res2.depth == INF) {
         return new Result(null, INF);
       } else {
@@ -37,8 +38,8 @@ public enum Evaluator {
   },
   DepthIn2 {
     @Override
-    Result eval(Poly prob, Poly cand) {
-      DepthAndCovering res = computeDepthAndCovering(prob, cand, 2, false);
+    Result eval(Poly prob, Poly cand, Stopwatch latency) {
+      DepthAndCovering res = computeDepthAndCovering(prob, cand, 2, false, latency);
       if (res.depth >= INF) {
         return new Result(null, INF);
       } else {
@@ -47,11 +48,12 @@ public enum Evaluator {
     }
   }, NumSolutionsIn2 {
     @Override
-    Result eval(Poly prob, Poly cand) {
+    Result eval(Poly prob, Poly cand, Stopwatch latency) {
       Judge judge = Judge.newBuilder(prob, cand)
           .setMaxNumCands(2)
           .setMinNumCands(2)
           .setAlsoNumSolutions()
+          .setLatencyMetric(latency)
           .build();
       Judge.Result jRes;
       try {
@@ -68,7 +70,7 @@ public enum Evaluator {
     }
   },;
 
-  abstract Result eval(Poly prob, Poly cand);
+  abstract Result eval(Poly prob, Poly cand, Stopwatch latency);
 
   public boolean negative() {
     return false;
@@ -108,7 +110,7 @@ public enum Evaluator {
   }
 
   private static DepthAndCovering computeDepthAndCovering(Poly prob, Poly cand, int numCand,
-                                                          boolean numSolutions) {
+                                                          boolean numSolutions, Stopwatch latency) {
     int n = Math.max(cand.getHeight(), cand.getWidth()) / 2 + 1;
     int dep = 0;
     Judge.Result result = null;
@@ -117,6 +119,7 @@ public enum Evaluator {
       Judge.Builder builder = Judge.newBuilder(prob, cand)
           .setMinNumCands(numCand)
           .setMaxNumCands(numCand)
+          .setLatencyMetric(latency)
           .setEnabledCandDepth(nd);
       Judge.Result jRes;
       try {

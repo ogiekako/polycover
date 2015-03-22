@@ -7,7 +7,7 @@ public class AIOption {
   public boolean revRotSym = false;
   public int queueSize = 5;
   public Evaluator objective = Evaluator.DepthIn2;
-  public Validator validator = Validator.Connected;
+  public Validator validator = Validator.NoSeparate;
 
   @Override
   public String toString() {

@@ -2,7 +2,7 @@ package ui;
 
 import main.Poly;
 
-public class Model implements Poly {
+public class Model {
 
   Poly poly;
 
@@ -46,7 +46,6 @@ public class Model implements Poly {
     this.poly = poly;
   }
 
-  @Override
   public String toString() {
     return poly.toString();
   }
@@ -55,13 +54,15 @@ public class Model implements Poly {
     return poly == null;
   }
 
-  @Override
   public String filePath() {
     return null;
   }
 
-  @Override
   public void setFilePath(String filePath) {
     // Do nothing.
+  }
+
+  public Poly getPoly() {
+    return poly;
   }
 }

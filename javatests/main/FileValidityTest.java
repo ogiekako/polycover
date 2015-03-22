@@ -28,7 +28,7 @@ public class FileValidityTest {
       sp.f = f;
       Assert.assertTrue(f, f.endsWith(".dup") || f.endsWith(".ans"));
       sp.dup = f.endsWith(".dup");
-      sp.poly = PolyArray.load(new Scanner(new File(f)));
+      sp.poly = Poly.load(new Scanner(new File(f)));
       sps.add(sp);
     }
     for (SP u : sps) {

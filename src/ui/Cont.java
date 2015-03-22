@@ -22,7 +22,6 @@ import main.Judge;
 import main.NoCellException;
 import main.Poly;
 import main.PolyAnalyzer;
-import main.PolyArray;
 import main.ProgressMonitor;
 import ui.view.View;
 
@@ -49,7 +48,7 @@ public class Cont implements AbstCont, ProgressMonitor {
 
   public Cont() {
     cand = new Model(null);
-    problem = new Model(new PolyArray(new boolean[20][20]));
+    problem = new Model(new Poly(new boolean[20][20]));
     wa = new CoveringModel();
   }
 
@@ -58,7 +57,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     updateView();
   }
 
-  public void setProblem(PolyArray _covered) {
+  public void setProblem(Poly _covered) {
     this.problem.setPoly(_covered);
     updateView();
   }
@@ -170,7 +169,7 @@ public class Cont implements AbstCont, ProgressMonitor {
     if (problemAndCand.cand == null && problemAndCand.problem == null) {
       if (file.getPath().endsWith(".ans") || file.getPath().endsWith(".dup")) {
         try {
-          problemAndCand.cand = PolyArray.load(new Scanner(file));
+          problemAndCand.cand = Poly.load(new Scanner(file));
         } catch (Exception e) {
           String msg = "failed to read file as a candidate";
           logger.warning(msg + ":\n" + e.toString());
@@ -179,7 +178,7 @@ public class Cont implements AbstCont, ProgressMonitor {
         }
       } else {
         try {
-          problemAndCand.problem = PolyArray.load(new Scanner(file));
+          problemAndCand.problem = Poly.load(new Scanner(file));
         } catch (Exception e) {
           String msg = "failed to read file as a problem";
           logger.warning(msg + ":\n" + e.toString());
@@ -201,10 +200,10 @@ public class Cont implements AbstCont, ProgressMonitor {
     while (sc.hasNext()) {
       String command = sc.next();
       if (command.equals("covered:")) {
-        problemAndCand.problem = PolyArray.load(sc);
+        problemAndCand.problem = Poly.load(sc);
       }
       if (command.equals("cover:")) {
-        problemAndCand.cand = PolyArray.load(sc);
+        problemAndCand.cand = Poly.load(sc);
       }
     }
     return problemAndCand;
@@ -212,8 +211,8 @@ public class Cont implements AbstCont, ProgressMonitor {
 
   class ProblemAndCand {
 
-    PolyArray problem;
-    PolyArray cand;
+    Poly problem;
+    Poly cand;
   }
 
   public void judge(final JFrame parent) {
@@ -276,7 +275,7 @@ public class Cont implements AbstCont, ProgressMonitor {
         nxt[i + 1][j + 1] = cand.get(i, j);
       }
     }
-    cand.setPoly(new PolyArray(nxt));
+    cand.setPoly(new Poly(nxt));
     updateView();
   }
 

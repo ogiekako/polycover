@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import javax.swing.*;
 
-import main.PolyArray;
+import main.Poly;
 import main.Prop;
 import ui.Cont;
 import ui.DialogShower;
@@ -83,7 +83,7 @@ class FileMenu extends JMenu {
           return ;
         }
         try {
-          FileUtil.savePoly(cont.cand, file);
+          FileUtil.savePoly(cont.cand.getPoly(), file);
         } catch (IOException e1) {
           DialogShower.message(FileMenu.this, e1.getMessage());
         }
@@ -124,7 +124,7 @@ class FileMenu extends JMenu {
           if (n <= 0) {
             throw new Exception();
           }
-          cont.setCand(new PolyArray(new boolean[n][n]));
+          cont.setCand(new Poly(new boolean[n][n]));
           sizeDialog.dispose();
         } catch (Exception ex) {
           JOptionPane.showMessageDialog(panel, "specify integer > 0.");

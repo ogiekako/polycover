@@ -65,16 +65,18 @@ public class PolyAnalyzer {
     return connected(cell);
   }
 
-  private void dfs(boolean[][] cell, int x, int y) {
+  private int dfs(boolean[][] cell, int x, int y) {
     int h = cell.length, w = cell[0].length;
     assert cell[x][y];
     cell[x][y] = false;
+    int res = 1;
     for (int d = 0; d < 4; d++) {
       int nx = x + dx[d], ny = y + dy[d];
       if (0 <= nx && nx < h && 0 <= ny && ny < w && cell[nx][ny]) {
-        dfs(cell, nx, ny);
+        res += dfs(cell, nx, ny);
       }
     }
+    return res;
   }
 
   public boolean contains(Poly target) {
@@ -125,6 +127,25 @@ public class PolyAnalyzer {
         if (cell[i][j]) {
           res++;
           dfs(cell, i, j);
+        }
+      }
+    }
+    return res;
+  }
+
+  public int minCompSize() {
+    int h = poly.getHeight(), w = poly.getWidth();
+    boolean[][] cell = new boolean[h + 2][w + 2];
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        cell[i + 1][j + 1] = poly.get(i, j);
+      }
+    }
+    int res = Integer.MAX_VALUE;
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        if (cell[i][j]) {
+          res = Math.min(res, dfs(cell, i, j));
         }
       }
     }

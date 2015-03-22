@@ -90,6 +90,11 @@ public class Stopwatch {
     return b.toString();
   }
 
+  @Override
+  public String toString() {
+    return summary();
+  }
+
   private String toStr(double ms) {
     double min = 60 * 1000;
     if (ms < min) {

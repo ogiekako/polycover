@@ -14,6 +14,7 @@ class State implements Comparable<State> {
   Covering covering;
   int hash;
   long id;
+  Validator.Decision type;
 
   public State(Poly cand, long objective, Covering covering) {
     this.cand = cand;

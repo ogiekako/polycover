@@ -7,9 +7,10 @@ import main.Poly;
 import main.PolyAnalyzer;
 
 public enum Validator {
-  Inner9CompNoDiag {
+  Inner_9Comp_NoDiag_ConcatMinComp {
     @Override
-    boolean valid(Poly cand, Collection<Cell> cells) {
+    Decision validate(Poly cand, Collection<Cell> cells) {
+      PolyAnalyzer prevAn = PolyAnalyzer.of(cand);
       cand = cand.clone();
       Cell p = null;
       for (Cell pos : cells) {
@@ -18,12 +19,22 @@ public enum Validator {
       }
 
       PolyAnalyzer an = PolyAnalyzer.of(cand);
-      if (9 < an.numComponents()) {
-        return false;
+      int numComp = an.numComponents();
+      if (9 < numComp) {
+        return Decision.NG;
+      }
+      if (numComp > 1) {
+        int prevNumComp = prevAn.numComponents();
+        if (1 < prevNumComp && prevNumComp < numComp) {
+          return Decision.NG;
+        }
+        if (prevNumComp >= numComp && an.minCompSize() <= prevAn.minCompSize()) {
+          return Decision.NG;
+        }
       }
 
       if (innerOrNeighbour(cand, p)) {
-        return false;
+        return Decision.NG;
       }
 
       for (int i = 0; i < 2; i++) {
@@ -36,11 +47,11 @@ public enum Validator {
           bad |= !get(cand, x, y) && !get(cand, x + 1, y + 1)
                  && get(cand, x, y + 1) && get(cand, x + 1, y);
           if (bad) {
-            return false;
+            return Decision.NG;
           }
         }
       }
-      return true;
+      return numComp == 1 ? Decision.OK : Decision.Intermediate;
     }
 
     private boolean innerOrNeighbour(Poly cand, Cell p) {
@@ -97,7 +108,7 @@ public enum Validator {
   },
   NoSeparate {
     @Override
-    boolean valid(Poly cand, Collection<Cell> cs) {
+    Decision validate(Poly cand, Collection<Cell> cs) {
       int prevNumComp = PolyAnalyzer.of(cand).numComponents();
       cand = cand.clone();
       for (Cell pos : cs) {
@@ -105,29 +116,29 @@ public enum Validator {
       }
       PolyAnalyzer an = PolyAnalyzer.of(cand);
       if (prevNumComp < an.numComponents()) {
-        return false;
+        return Decision.NG;
       }
       boolean res = an.hasNoHole();
-      return res;
+      return Decision.OK;
     }
   }, AllowHole {
     @Override
-    boolean valid(Poly cand, Collection<Cell> cs) {
+    Decision validate(Poly cand, Collection<Cell> cs) {
       cand = cand.clone();
       for (Cell pos : cs) {
         cand.flip(pos.x, pos.y);
       }
       boolean res = PolyAnalyzer.of(cand).isConnected();
-      return res;
+      return res ? Decision.OK : Decision.NG;
     }
   }, AllowUnconnected {
     @Override
-    boolean valid(Poly cand, Collection<Cell> pos) {
-      return true;
+    Decision validate(Poly cand, Collection<Cell> pos) {
+      return Decision.OK;
     }
   }, AllowHoleDisallowDiagonal {
     @Override
-    boolean valid(Poly cand, Collection<Cell> pos) {
+    Decision validate(Poly cand, Collection<Cell> pos) {
       cand = cand.clone();
       Cell c = null;
       for (Cell d : pos) {
@@ -144,21 +155,27 @@ public enum Validator {
           bad |= !get(cand, x, y) && !get(cand, x + 1, y + 1)
                  && get(cand, x, y + 1) && get(cand, x + 1, y);
           if (bad) {
-            return false;
+            return Decision.NG;
           }
         }
       }
-      return PolyAnalyzer.of(cand).isConnected();
+      return PolyAnalyzer.of(cand).isConnected() ? Decision.OK : Decision.NG;
     }
 
   };
 
-  abstract boolean valid(Poly cand, Collection<Cell> cells);
+  abstract Decision validate(Poly cand, Collection<Cell> cells);
 
   private static boolean get(Poly cand, int x, int y) {
     if (0 <= x && x < cand.getHeight() && 0 <= y && y < cand.getWidth()) {
       return cand.get(x, y);
     }
     return false;
+  }
+
+  public static enum Decision {
+    OK,
+    NG,
+    Intermediate,
   }
 }

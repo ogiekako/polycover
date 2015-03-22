@@ -24,7 +24,9 @@ import main.NoCellException;
 import main.Poly;
 import main.PolyAnalyzer;
 import main.ProgressMonitor;
+import main.Stopwatch;
 import ui.view.View;
+import util.Debug;
 
 public class Cont implements AbstCont, ProgressMonitor {
 
@@ -322,9 +324,11 @@ public class Cont implements AbstCont, ProgressMonitor {
 
       @Override
       protected Integer doInBackground() throws Exception {
+        Stopwatch stopwatch = new Stopwatch();
         ai = AI.builder(problem.getPoly())
             .setOption(aiOption)
             .setMonitor(Cont.this)
+            .setLatencyMetric(stopwatch)
             .addBestResultMonitor(
                 new BestResultMonitor() {
                   @Override
@@ -333,6 +337,7 @@ public class Cont implements AbstCont, ProgressMonitor {
                   }
                 }).build();
         Result best = ai.solve(cand.getPoly());
+        Debug.debug(stopwatch.summary());
         cand.setPoly(best.convertedCand);
         objective = best.objective;
         updateView();

@@ -114,23 +114,23 @@ public enum Evaluator {
     int n = Math.max(cand.getHeight(), cand.getWidth()) / 2 + 1;
     int dep = 0;
     Judge.Result result = null;
-    for (int b = Integer.highestOneBit(n); b > 0; b >>= 1) {
-      int nd = dep + b;
+    while (dep < n) {
+      dep++;
       Judge.Builder builder = Judge.newBuilder(prob, cand)
           .setMinNumCands(numCand)
           .setMaxNumCands(numCand)
           .setLatencyMetric(latency)
-          .setEnabledCandDepth(nd);
+          .setEnabledCandDepth(dep);
       Judge.Result jRes;
       try {
         jRes = builder.build().judge();
       } catch (NoCellException e) {
         throw new AssertionError(e);
       }
-      if (jRes.covering == null) {// cannot cover
-        dep += b;
-      } else {
+      if (jRes.covering != null) {// can cover with depth dep.
         result = jRes;
+        dep--;
+        break;
       }
     }
     if (!numSolutions) {

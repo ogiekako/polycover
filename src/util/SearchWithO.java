@@ -9,6 +9,7 @@ import java.util.logging.Level;
 
 import ai.AI;
 import ai.AIOption;
+import ai.BestResultMonitor;
 import ai.Evaluator;
 import ai.Result;
 import ai.Validator;
@@ -23,11 +24,13 @@ public class SearchWithO {
   class E implements Comparable<E> {
 
     String prob;
+    String cand;
     long obj;
 
-    public E(long obj, String prob) {
+    public E(long obj, String prob, String cand) {
       this.obj = obj;
       this.prob = prob;
+      this.cand = cand;
     }
 
     @Override
@@ -38,19 +41,27 @@ public class SearchWithO {
 
   private void run() {
     AI.logger.setLevel(Level.OFF);
-    List<Poly> probs = FileUtil.allPolysUnder(new File("problem/6"), ".no");
+    List<Poly> probs = FileUtil.allPolysUnder(new File("problem/7"), ".no");
     List<Poly> seeds = new ArrayList<Poly>();
     seeds.addAll(FileUtil.allPolysUnder(new File("ans/6/O.ans"), ""));
     List<E> cands = new ArrayList<E>();
     for (Poly prob : probs) {
       AIOption opt = new AIOption();
-      opt.queueSize = 5;
+      opt.queueSize = 50;
       opt.rotSym = true;
       opt.revRotSym = true;
-      opt.maxIter = 200;
-      opt.objective = Evaluator.DepthAndNumSolutionsIn2;
+      opt.maxIter = 1000;
+      opt.objective = Evaluator.DepthAndNumSolutionsIn23;
       opt.validator = Validator.AllowHoleDisallowDiagonal;
-      Result result = AI.builder(prob).setOption(opt).build().solve(seeds);
+      Result result = AI.builder(prob).setOption(opt)
+          .addBestResultMonitor(new BestResultMonitor() {
+            @Override
+            public void update(Result result) {
+              System.err.println("obj: " + result.objective);
+            }
+          })
+          .build().solve(seeds);
+
       File tmp;
       try {
         tmp = File.createTempFile("poly", "maybe.ans");
@@ -63,12 +74,13 @@ public class SearchWithO {
         System.out.println("Maybe solution:");
         System.out.println(prob.filePath() + " " + tmp.getPath());
       } else {
-        cands.add(new E(result.objective, prob.filePath()));
+        System.err.println(prob.filePath() + " " + tmp.getPath() + " " + result.objective);
+        cands.add(new E(result.objective, prob.filePath(), tmp.getPath()));
       }
     }
     Collections.sort(cands);
     for (E e : cands) {
-      System.out.println(e.prob + " " + e.obj);
+      System.out.println(e.prob + " " + e.cand + " " + e.obj);
     }
   }
 }

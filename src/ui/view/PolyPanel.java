@@ -107,8 +107,6 @@ public class PolyPanel extends JPanel implements View {
     int H = getHeight(), W = getWidth();
     cL = Math.min((H - 2 * margin) / ph, (W - 2 * margin) / pw);
 
-//		assert cL > 0;
-
     y1 = (H - cL * ph) / 2;
     x1 = (W - cL * pw) / 2;
 

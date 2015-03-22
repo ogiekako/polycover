@@ -111,8 +111,11 @@ public class SearchAll {
         opt.queueSize = 5;
         opt.maxIter = 100;
         opt.objective = Evaluator.DepthAndNumSolutionsIn2;
-        opt.validator = Validator.Inner9CompNoDiag;
-        Result result = AI.builder(prob).setOption(opt).build().solve(seed);
+        opt.validator = Validator.Inner_9Comp_NoDiag_ConcatMinComp;
+        Result result = AI.builder(prob)
+            .setOption(opt)
+            .setLatencyMetric(latency)
+            .build().solve(seed);
         File tmp;
         try {
           tmp = File.createTempFile("poly", "maybe.ans");
@@ -126,6 +129,7 @@ public class SearchAll {
           System.out.println(prob.filePath() + " " + tmp.getPath());
           solved.add(prob.filePath());
         }
+        System.err.println("latency: " + latency.summary());
       }
     }
   }

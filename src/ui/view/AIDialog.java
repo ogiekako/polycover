@@ -73,13 +73,10 @@ public class AIDialog extends JDialog {
 
       @Override
       public void done(boolean aborted, Result best) {
-        Debug.debug(aborted, "A");
         String msg;
         if (best.objective == Evaluator.INF) {
-          Debug.debug(aborted, "B");
           msg = "maybe a solution.";
         } else {
-          Debug.debug(aborted, "C");
           msg =
               String.format("%s = %d.",
                             aiOption.objective,

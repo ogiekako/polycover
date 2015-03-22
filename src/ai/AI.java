@@ -28,7 +28,7 @@ public class AI {
   public static final Logger logger = Logger.getLogger(AI.class.getName());
 
   private ProgressMonitor monitor = ProgressMonitor.DO_NOTHING;
-  private Stopwatch latency = new Stopwatch();
+  private Stopwatch latency = Stopwatch.DO_NOTHING;
   private AIOption opt = new AIOption();
 
   public boolean abort = false;
@@ -68,7 +68,9 @@ public class AI {
         throw new IllegalArgumentException("height and width must be the same");
       }
       State initState = eval(prob, seed);
-      updateAndTellBestState(initState);
+      if (bestState == null || initState.objective > bestState.objective) {
+        updateAndTellBestState(initState);
+      }
       push(initState);
     }
     int numIter = 0;
@@ -81,9 +83,7 @@ public class AI {
         return;
       }
       monitor.setValue((int) Math.round(numIter * 100.0 / opt.maxIter));
-      logger.info("numIter: " + numIter);
-      logger.info("state size: " + stateQueue.size());
-      if (cur.objective > bestState.objective) {
+      if (cur.type == Validator.Decision.OK && cur.objective > bestState.objective) {
         updateAndTellBestState(cur);
       }
       if (cur.objective == Evaluator.INF) {
@@ -108,12 +108,11 @@ public class AI {
     if (cur.covering == null) {
       throw new AssertionError();
     }
-    List<Poly> possibleNextCands = getPossibleNextCands(cur);
-    if (possibleNextCands == null) {
+    List<State> nextStates = computeNextStates(cur);
+    if (nextStates == null) {
       return;
     }
-    for (Poly nxtCand : possibleNextCands) {
-      State state = eval(prob, nxtCand);
+    for (State state : nextStates) {
       push(state);
       if (state.objective == Evaluator.INF) {
         return;
@@ -121,7 +120,7 @@ public class AI {
     }
   }
 
-  private List<Poly> getPossibleNextCands(State cur) {
+  private List<State> computeNextStates(State cur) {
     Covering covering = cur.covering;
     int INF = 10000;
     int minX = INF, minY = INF, maxX = 0, maxY = 0;
@@ -164,7 +163,7 @@ public class AI {
     minX -= curOffsetX;
     minY -= curOffsetY;
 
-    List<Poly> possibleNextCands = new ArrayList<Poly>();
+    List<State> possibleNextStates = new ArrayList<State>();
     List<Set<Cell>> cellSets = new ArrayList<Set<Cell>>();
     HashSet<Cell> seen = new HashSet<Cell>();
     for (int i = 0; i < n; i++) {
@@ -175,41 +174,46 @@ public class AI {
         if (j < curOffsetY || minY + j >= covering.width()) {
           continue;
         }
-        if (covering.get(minX + i, minY + j) < 0 || covering.get(minX + i, minY + j) > 1) {
-          int i2 = n - 1 - i;
-          int j2 = n - 1 - j;
-          TreeSet<Cell> cs = new TreeSet<Cell>();
-          Cell c = new Cell(i, j);
-          if (seen.contains(c)) {
-            continue;
-          }
-          cs.add(c);
-          if (opt.rotSym || opt.revRotSym) {
-            cs.add(new Cell(j, i2));
-            cs.add(new Cell(i2, j2));
-            cs.add(new Cell(j2, i));
-          }
-          if (opt.revRotSym) {
-            cs.add(new Cell(i, j2));
-            cs.add(new Cell(j, i));
-            cs.add(new Cell(i2, j));
-            cs.add(new Cell(j2, i2));
-          }
-          seen.addAll(cs);
-          cellSets.add(cs);
+        if (covering.get(minX + i, minY + j) >= 0 && covering.get(minX + i, minY + j) <= 1) {
+          continue;
         }
+        int i2 = n - 1 - i;
+        int j2 = n - 1 - j;
+        TreeSet<Cell> cs = new TreeSet<Cell>();
+        Cell c = new Cell(i, j);
+        if (seen.contains(c)) {
+          continue;
+        }
+        cs.add(c);
+        if (opt.rotSym || opt.revRotSym) {
+          cs.add(new Cell(j, i2));
+          cs.add(new Cell(i2, j2));
+          cs.add(new Cell(j2, i));
+        }
+        if (opt.revRotSym) {
+          cs.add(new Cell(i, j2));
+          cs.add(new Cell(j, i));
+          cs.add(new Cell(i2, j));
+          cs.add(new Cell(j2, i2));
+        }
+        seen.addAll(cs);
+        cellSets.add(cs);
       }
     }
     for (Set<Cell> cs : cellSets) {
-      if (!opt.validator.valid(cur.cand, cs)) {
+
+      Validator.Decision type = opt.validator.validate(cur.cand, cs);
+      if (type == Validator.Decision.NG) {
         continue;
       }
       Poly nxtCand = cur.cand.clone();
       flip(nxtCand, cs);
 
-      possibleNextCands.add(nxtCand);
+      State state = eval(prob, nxtCand);
+      state.type = type;
+      possibleNextStates.add(state);
     }
-    return possibleNextCands;
+    return possibleNextStates;
   }
 
   private void push(State state) {
@@ -272,6 +276,11 @@ public class AI {
 
     public Builder addBestResultMonitor(BestResultMonitor m) {
       ai.bestResultMonitors.add(m);
+      return this;
+    }
+
+    public Builder setLatencyMetric(Stopwatch latencyMetric) {
+      ai.latency = latencyMetric;
       return this;
     }
 

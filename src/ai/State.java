@@ -7,7 +7,7 @@ import main.Poly;
 
 class State implements Comparable<State> {
 
-  private static Random rnd = new Random();
+  private static Random rnd = new Random(1498108204182L);
   Poly cand;
   // INF if infinity (cand can be a solution).
   long objective;

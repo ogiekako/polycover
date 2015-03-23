@@ -33,6 +33,7 @@ public class Judge {
   Option opt = new Option();
   private Cell[][] enabledCellsForCand;
   private Cell[] cellsInProblem;
+  boolean smartDepth = false;
 
   private static class Option {
 
@@ -67,6 +68,7 @@ public class Judge {
   private Poly boundingPoly;
   private Poly innerPoly;
   private boolean[][][][] forbiddenMoves;
+  private boolean[][][][] hasForbiddenMoves;
 
   Judge(Poly problem, Poly candidate) {
     this.problem = problem;
@@ -139,7 +141,7 @@ public class Judge {
    * また,その内側にはブロックがおいてあるかのように,入れない.
    */
   public Result judge() throws NoCellException {
-    candidate = candidate.clone();
+    candidate = candidate.clone().trim();
     logger.info(Debug.toString("Judge start with opt: ", opt));
 
     opt.latencyMetric.tick("initParams");
@@ -249,47 +251,7 @@ public class Judge {
     }
     logger.info(Debug.toString("num states", nodes.size()));
 
-    opt.latencyMetric.tick("computeForbiddenMovesPrep");
-    forbiddenMoves =
-        new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
-
-    Cell[][] innerPlusCands = new Cell[candidates.size()][];
-    for (int i = 0; i < candidates.size(); i++) {
-      List<Cell> innerPlusCand = new ArrayList<Cell>();
-      innerPlusCand.addAll(Arrays.asList(toCells(candidates.get(i).inner)));
-      innerPlusCand.addAll(Arrays.asList(toCells(candidates.get(i).cand)));
-      innerPlusCands[i] = innerPlusCand.toArray(new Cell[innerPlusCand.size()]);
-    }
-    opt.latencyMetric.tack("computeForbiddenMovesPrep");
-    opt.latencyMetric.tick("computeForbiddenMoves");
-    for (int i = 0; i < candidates.size(); i++) {
-      for (int j = 0; j < innerPlusCands[i].length; j++) {
-        Cell c = innerPlusCands[i][j];
-        for (int k = 0; k < j; k++) {
-          Cell d = innerPlusCands[i][k];
-          int dx = d.x - c.x;
-          int dy = d.y - c.y;
-          forbiddenMoves[i][i][dx + offset][dy + offset] = true;
-          forbiddenMoves[i][i][-dx + offset][-dy + offset] = true;
-        }
-      }
-      for (int j = 0; j < i; j++) {
-        for (Cell c : innerPlusCands[i]) {
-          boolean[][] forbid = forbiddenMoves[i][j];
-          for (Cell d : innerPlusCands[j]) {
-            int dx = d.x - c.x;
-            int dy = d.y - c.y;
-            if (!forbid[dx + offset][dy + offset]) {
-              forbid[dx + offset][dy + offset] = true;
-              forbiddenMoves[j][i][-dx + offset][-dy + offset] = true;
-            }
-          }
-        }
-      }
-    }
-
-    opt.latencyMetric.tack("computeForbiddenMoves");
-
+    computeForbiddenMoves();
     computeMaskToState();
 
     long all = (1L << numCellsInProblem) - 1;
@@ -373,15 +335,51 @@ public class Judge {
     return res;
   }
 
-  private Bits[] shift(Bits[] board, int k) {
-    Bits[] res = new Bits[board.length];
-    for (int i = 0; i < res.length; i++) {
-      res[i] = board[i].shift(k);
+  private void computeForbiddenMoves() {
+    opt.latencyMetric.tick("computeForbiddenMovesPrep");
+    forbiddenMoves =
+        new boolean[candidates.size()][candidates.size()][offset * 2][offset * 2];
+
+    Cell[][] cellsToComputeForbiddens = new Cell[candidates.size()][];
+    for (int i = 0; i < candidates.size(); i++) {
+      List<Cell> cellsToComputeForbidden = new ArrayList<Cell>();
+      cellsToComputeForbidden.addAll(Arrays.asList(toCells(candidates.get(i).cand)));
+      if (smartDepth) {
+        cellsToComputeForbidden.addAll(Arrays.asList(toCells(candidates.get(i).inner)));
+      }
+      cellsToComputeForbiddens[i] =
+          cellsToComputeForbidden.toArray(new Cell[cellsToComputeForbidden.size()]);
     }
-    return res;
+    opt.latencyMetric.tack("computeForbiddenMovesPrep");
+    opt.latencyMetric.tick("computeForbiddenMoves");
+    for (int i = 0; i < candidates.size(); i++) {
+      for (int j = 0; j < cellsToComputeForbiddens[i].length; j++) {
+        Cell c = cellsToComputeForbiddens[i][j];
+        for (int k = 0; k < j; k++) {
+          Cell d = cellsToComputeForbiddens[i][k];
+          int dx = d.x - c.x;
+          int dy = d.y - c.y;
+          forbiddenMoves[i][i][dx + offset][dy + offset] = true;
+          forbiddenMoves[i][i][-dx + offset][-dy + offset] = true;
+        }
+      }
+      for (int j = 0; j < i; j++) {
+        for (Cell c : cellsToComputeForbiddens[i]) {
+          boolean[][] forbid = forbiddenMoves[i][j];
+          for (Cell d : cellsToComputeForbiddens[j]) {
+            int dx = d.x - c.x;
+            int dy = d.y - c.y;
+            if (!forbid[dx + offset][dy + offset]) {
+              forbid[dx + offset][dy + offset] = true;
+              forbiddenMoves[j][i][-dx + offset][-dy + offset] = true;
+            }
+          }
+        }
+      }
+    }
+    opt.latencyMetric.tack("computeForbiddenMoves");
   }
 
-  //  private List<Node> with2cands(Bits[][][] forbiddenMoves) {
   private List<Node> with2cands() {
     long all = (1L << numCellsInProblem) - 1;
     List<Node> res = null;
@@ -443,16 +441,31 @@ public class Judge {
     }
     opt.monitor.setValue(0);
 
-    makeBoundingPoly(candidate);
-    makeInnerPoly(boundingPoly, opt.allowedCandDepth);
-    for (int i = 0; i < candidate.getHeight(); i++) {
-      for (int j = 0; j < candidate.getWidth(); j++) {
-        if (candidate.get(i, j) && innerPoly.get(i, j)) {
-          candidate.flip(i, j);
+    if (smartDepth) {
+      makeBoundingPoly(candidate);
+      makeInnerPoly(boundingPoly, opt.allowedCandDepth);
+      for (int i = 0; i < candidate.getHeight(); i++) {
+        for (int j = 0; j < candidate.getWidth(); j++) {
+          if (candidate.get(i, j) && innerPoly.get(i, j)) {
+            candidate.flip(i, j);
+          }
         }
       }
+    } else {
+      int h = candidate.getHeight(), w = candidate.getWidth();
+      for (int i=0;i<h;i++){
+        for(int j=0;j<w;j++){
+          int d = opt.allowedCandDepth;
+          if(d <= i && i < h - d && d <= j && j < w - d && candidate.get(i,j)){
+            candidate.flip(i,j);
+          }
+        }
+      }
+      boundingPoly = new Poly(1,1);
+      innerPoly = new Poly(1,1);
     }
-//    candidate = new Poly(cellsOnPeripheral);
+
+
     LinkedHashSet<Candidate> candSet = new LinkedHashSet<Candidate>();
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 4; j++) {
@@ -630,6 +643,16 @@ public class Judge {
     int dy = v.candMoveVec.y - u.candMoveVec.y;
     if (isForbidden(v.candId, u.candId, dx, dy)) {
       return false;
+    }
+    if (!smartDepth && opt.allowedCandDepth < Option.INF) {
+      int h = Math.min(candidates.get(v.candId).cand.getHeight(),
+                       candidates.get(u.candId).cand.getHeight());
+      int w = Math.min(candidates.get(v.candId).cand.getWidth(),
+                       candidates.get(u.candId).cand.getWidth());
+      if (Math.abs(dx) < h - opt.allowedCandDepth
+          && Math.abs(dy) < w - opt.allowedCandDepth) {
+        return false;
+      }
     }
     return true;
   }

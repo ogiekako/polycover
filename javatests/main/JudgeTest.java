@@ -281,11 +281,13 @@ public class JudgeTest {
         "#####",
     });
     Poly problem = new Poly(prob);
-    Covering res = Judge.newBuilder(problem, candidate)
+    Judge judge = Judge.newBuilder(problem, candidate)
         .setMinNumCands(2)
         .setMaxNumCands(2)
         .setEnabledCandDepth(2)
-        .build().judge().covering;
+        .build();
+    judge.smartDepth = true;
+    Covering res = judge.judge().covering;
 
     Assert.assertTrue(res != null);
 

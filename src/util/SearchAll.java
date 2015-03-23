@@ -108,6 +108,7 @@ public class SearchAll {
         Poly seed = e.cand;
         AIOption opt = new AIOption();
         opt.rotSym = true;
+        opt.revRotSym = false;
         opt.queueSize = 20;
         opt.maxIter = 200;
         opt.objective = Evaluator.DepthAndNumSolutionsIn2;
@@ -128,6 +129,8 @@ public class SearchAll {
           System.out.println("Maybe solution:");
           System.out.println(prob.filePath() + " " + tmp.getPath());
           solved.add(prob.filePath());
+        } else {
+          System.err.println(prob.filePath() + " " + tmp.getPath() + " " + result.objective);
         }
         System.err.println("latency: " + latency.summary());
       }
